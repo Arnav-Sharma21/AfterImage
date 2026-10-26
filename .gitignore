@@ -6,6 +6,8 @@ dist/
 client/dist/
 server/dist/
 coverage/
+test-results/
+playwright-report/
 
 # secrets
 .env

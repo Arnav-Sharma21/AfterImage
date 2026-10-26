@@ -1,13 +1,20 @@
 # AFTERIMAGE — implementation plan and risk report
 
-**Status:** Proposed for review; implementation has not started.  
+**Status:** Plan committed; initial foundation/authentication/basic moodspace slice implemented following the user's implementation instruction. Remaining milestones are pending.
+
 **Prepared:** October 26, 2026, Asia/Kolkata.  
 **Deadline:** October 27, 2026, 23:59 IST (18:29 UTC).  
 **Delivery target:** A deployed, tested application with five complete workflows and real, authorized music playback.
 
 This plan follows `AGENTS.md`, `docs/PRODUCT_BRIEF.md`, `docs/SUBMISSION_CHECKLIST.md`, and `design/REFERENCES.md`. All five local reference images were visually inspected. The repository currently contains planning material, not an application. Estimates assume one implementer, prompt access to service accounts, and roughly 35 hours of elapsed time remaining at planning. They are delivery budgets, not promises that every integration will succeed.
 
-Only this document is being created in this task. Scaffolding, dependencies, application code, commits, pushes, deployment, and submission require the subsequent instructions appropriate to those actions. Approval of the product plan alone does not authorize paid services or publication.
+The initial planning task created this document only. The subsequent implementation instruction authorizes scaffolding, dependencies, authentication, and basic moodspace persistence. Commits, pushes, deployment, paid services, and submission still require their appropriate explicit instructions.
+
+### Initial development slice — scope update
+
+The user explicitly limited the first implementation task to the runnable foundation, accounts, and title/description/mood-tag CRUD. This advances M2 and the basic persistence portion of M3. The provider spike in M1 is deferred by that instruction; perform it before starting recommendation or playback implementation. No provider integration, catalog verification, image blocks, quote blocks, energy/theme preferences, recommendations, favorites, or playback is claimed complete.
+
+Implemented: React/Vite/Tailwind shell, self-hosted typography, same-origin API communication, Express/Mongoose startup and database handling, Mongo-backed sessions, Argon2id, CSRF/origin protection, strict validation, owner-scoped CRUD, revision conflicts, form error/recovery states, unsaved-edit guards, and focused database/browser tests. Atlas and production verification await environment credentials and deployment authorization. See `docs/MILESTONE_1.md` for the verified handoff and `README.md` for setup. The original milestones and full workflow acceptance criteria below remain the target for subsequent work.
 
 ## 1. Product identity and boundaries
 
@@ -548,4 +555,4 @@ A separate QA record confirms one recording played fully; a short demo clip alon
 
 ### Decisions for plan review
 
-The proposed defaults are: private accounts; exactly five workflows; user-labeled image meaning; transparent rule-based recommendations; conditional Jamendo integration with a real licensed-catalog fallback; explicit saves and bounded selections; one Render origin plus Atlas; persistent favorites and a session-only queue. Provider access, exact recording rights, hosting cost approval, and deployment authorization remain external gates. No application behavior, integration, deployment, or test pass is claimed by this planning document.
+The proposed defaults are: private accounts; exactly five workflows; user-labeled image meaning; transparent rule-based recommendations; conditional Jamendo integration with a real licensed-catalog fallback; explicit saves and bounded selections; one Render origin plus Atlas; persistent favorites and a session-only queue. Provider access, exact recording rights, hosting cost approval, and deployment authorization remain external gates. Actual initial-slice verification is recorded in `docs/MILESTONE_1.md`; future catalog, playback, and production capabilities remain unverified until implemented and tested.
