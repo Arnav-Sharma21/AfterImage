@@ -47,7 +47,7 @@ export function createAudioController(audio, store, resolve = (track, signal) =>
       const { data } = await resolve(track, activeRequest.signal);
       if (disposed || generation !== version) return;
       if (!data.streamUrl || !data.isPlayable) throw new Error('This track has no available stream.');
-      store.setState(state => ({ queue: state.queue.map(item => item.id === track.id ? queueTrack(data) : item) }));
+      store.setState(state => ({ queue: state.queue.map(item => item.id === track.id ? queueTrack({ ...data, sourceSpaceId: item.sourceSpaceId }) : item) }));
       source = data.streamUrl;
       audio.src = source;
       source = audio.src;

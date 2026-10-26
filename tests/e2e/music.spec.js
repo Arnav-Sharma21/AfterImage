@@ -25,11 +25,13 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   await rows.first().getByRole('button', { name: `Play ${title}`, exact: true }).click();
   await expect.poll(() => page.evaluate(() => document.querySelector('audio').currentTime), { timeout: 25000 }).toBeGreaterThan(1);
   await rows.nth(1).getByRole('button', { name: /^Queue / }).click();
-  await rows.first().getByRole('button', { name: `Save ${title} to a space`, exact: true }).click();
+  await page.getByRole('link', { name: 'Listen', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Back to Discover', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Save to Space', exact: true }).click();
   await page.getByLabel('Choose your space').selectOption(spaceId);
   await page.getByRole('dialog').getByRole('button', { name: 'Save track', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  await page.getByRole('link', { name: 'Listen', exact: true }).click();
+  await expect(page.getByText('Saved to your space.', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   expect(await page.evaluate(() => document.querySelector('audio').paused)).toBe(true);

@@ -11,12 +11,13 @@ import { AuthForm } from '../auth/AuthForm.jsx';
 import { MoodPicker } from './MoodPicker.jsx';
 import { useSpace } from './useSpace.js';
 import { FragmentEditor } from './FragmentEditor.jsx';
+import { SoundTuning } from './SoundTuning.jsx';
 import { RecommendationPanel } from '../recommendations/RecommendationPanel.jsx';
 
 const EMPTY_SPACE = { title: '', description: '', moods: [], fragments: [] };
 
 function SpaceEditor({ initialSpace }) {
-  const [draft, setDraft] = useState(() => ({ title: initialSpace.title, description: initialSpace.description, moods: initialSpace.moods, fragments: initialSpace.fragments || [] }));
+  const [draft, setDraft] = useState(() => ({ title: initialSpace.title, description: initialSpace.description, moods: initialSpace.moods, fragments: initialSpace.fragments || [], soundTuning: initialSpace.soundTuning || {} }));
   const [saved, setSaved] = useState(initialSpace);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +26,7 @@ function SpaceEditor({ initialSpace }) {
   const [conflict, setConflict] = useState(false);
   const navigate = useNavigate();
   const formRef = useRef(null);
-  const dirty = draft.title !== saved.title || draft.description !== saved.description || draft.moods.join('|') !== saved.moods.join('|') || JSON.stringify(draft.fragments) !== JSON.stringify(saved.fragments || []);
+  const dirty = draft.title !== saved.title || draft.description !== saved.description || draft.moods.join('|') !== saved.moods.join('|') || JSON.stringify(draft.fragments) !== JSON.stringify(saved.fragments || []) || JSON.stringify(draft.soundTuning) !== JSON.stringify(saved.soundTuning || {});
   const blocker = useBlocker(dirty && !busy);
   const expired = useSessionStore(state => state.expired);
   useLayoutEffect(() => {
@@ -52,7 +53,7 @@ function SpaceEditor({ initialSpace }) {
         method: saved.id ? 'PATCH' : 'POST', body: { ...draft, ...(saved.id ? { revision: saved.revision } : {}) }
       });
       setSaved(data);
-      setDraft({ title: data.title, description: data.description, moods: data.moods, fragments: data.fragments || [] });
+      setDraft({ title: data.title, description: data.description, moods: data.moods, fragments: data.fragments || [], soundTuning: data.soundTuning || {} });
       setNotice('Saved to your private library.');
       if (!saved.id) navigate(`/compose/${data.id}`, { replace: true });
     } catch (failure) {
@@ -80,6 +81,7 @@ function SpaceEditor({ initialSpace }) {
       </div>
       <aside className="compose-inspector" aria-label="Space atmosphere">
         <MoodPicker value={draft.moods} onChange={value => change('moods', value)} error={fieldErrors.moods} disabled={busy} />
+        <SoundTuning value={draft.soundTuning} onChange={value => change('soundTuning', value)} disabled={busy} />
         <div className="space-preview" aria-hidden="true"><span>{draft.title || 'Your space, taking shape.'}</span><p>{draft.moods.length ? draft.moods.join(' / ') : 'A mood is a beginning.'}</p></div>
         <p className="fine-print">Only you can see this space. Mood tags, matched words, and saved songs guide its music.</p>
       </aside>

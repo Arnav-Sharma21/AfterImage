@@ -15,11 +15,10 @@ export async function saveTrack(ownerId, spaceId, provider, providerTrackId, mus
   const trackId = `${provider}:${providerTrackId}`;
   if (space.savedTracks?.some(item => item.trackId === trackId)) return;
   if (space.savedTracks?.length >= MAX_SAVED_TRACKS) throw new AppError(409, 'SPACE_TRACK_LIMIT', `A space can hold up to ${MAX_SAVED_TRACKS} tracks. Remove one first.`);
-  const cached = space.recommendation?.tracks.some(item => item.trackId === trackId)
-    ? await Track.findById(trackId).lean() : null;
+  const cached = await Track.findById(trackId).lean();
   const freshCache = cached?.isPlayable && Date.now() - new Date(cached.verifiedAt).getTime() < 5 * 60 * 1000;
-  // A just-generated, server-verified recommendation already has trustworthy
-  // metadata. Saving its reference need not fail on a transient second lookup.
+  // Fresh metadata from generation or a successful playback lookup is server
+  // verified. Saving its reference need not repeat a fragile provider lookup.
   // Playback still resolves a fresh stream every time.
   const track = freshCache ? serializeTrack(cached) : await musicService.getTrack(provider, providerTrackId);
   if (!track.isPlayable) throw new AppError(410, 'STREAM_UNAVAILABLE', 'This track has no eligible stream and cannot be saved.');

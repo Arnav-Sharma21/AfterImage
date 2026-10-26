@@ -1,3 +1,4 @@
+import { cacheTrackMetadata } from '../models/Track.js';
 import { AppError } from '../middleware/errors.js';
 
 export function createMusicService(provider) {
@@ -11,6 +12,7 @@ export function createMusicService(provider) {
     async resolvePlayback(providerName, id) {
       const track = await this.getTrack(providerName, id);
       if (!track.isPlayable || !track.streamUrl) throw new AppError(410, 'STREAM_UNAVAILABLE', 'This track has no eligible stream. Try another track.');
+      await cacheTrackMetadata([track]);
       return track;
     }
   };

@@ -4,7 +4,7 @@ import { AppError } from '../middleware/errors.js';
 export function serializeSpace(space) {
   return {
     id: space._id.toString(), title: space.title, description: space.description,
-    moods: space.moods, fragments: space.fragments || [], revision: space.revision,
+    moods: space.moods, soundTuning: space.soundTuning || {}, fragments: space.fragments || [], revision: space.revision,
     createdAt: space.createdAt, updatedAt: space.updatedAt
   };
 }

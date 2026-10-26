@@ -1,4 +1,4 @@
-export const ALGORITHM_VERSION = 'mood-rules-1';
+export const ALGORITHM_VERSION = 'mood-rules-2';
 export const DIMENSIONS = ['energy', 'melancholy', 'warmth', 'intensity', 'nostalgia'];
 export const DIMENSION_WEIGHTS = { energy: .35, melancholy: .2, warmth: .15, intensity: .2, nostalgia: .1 };
 
@@ -21,7 +21,7 @@ const wordGroups = {
   Restless: ['restless', 'restlessness', 'anxious', 'racing', 'agitated'],
   Melancholic: ['melancholic', 'melancholy', 'sad', 'sadness', 'lonely', 'loneliness', 'rain', 'rainy', 'grief', 'sorrow'],
   Warm: ['warm', 'warmth', 'cozy', 'cosy', 'sunshine', 'tender', 'acoustic', 'home'],
-  Dreamlike: ['dream', 'dreams', 'dreamlike', 'dreamy', 'floating', 'haze', 'hazy', 'night', 'ethereal'],
+  Dreamlike: ['dream', 'dreams', 'dreamlike', 'dreamy', 'floating', 'haze', 'hazy', 'night', 'midnight', 'nocturnal', 'ethereal'],
   Focused: ['focus', 'focused', 'study', 'studying', 'reading', 'concentrate', 'concentration'],
   Intense: ['intense', 'intensity', 'angry', 'anger', 'fierce', 'powerful', 'storm', 'stormy', 'explosive'],
   Uplifting: ['uplifting', 'happy', 'happiness', 'joy', 'joyful', 'bright', 'celebrate', 'celebration', 'hope', 'hopeful'],

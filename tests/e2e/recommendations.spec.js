@@ -4,6 +4,8 @@ test('real mood recommendations, fragments, preferences and existing playback', 
   test.skip(process.env.RUN_LIVE_MUSIC_TESTS !== '1', 'Requires real Jamendo credentials and external media.');
   test.setTimeout(180000);
   const pageErrors = [];
+  let generations = 0;
+  page.on('request', request => { if (request.method() === 'POST' && /\/recommendations$/.test(new URL(request.url()).pathname)) generations++; });
   page.on('pageerror', error => pageErrors.push(error.message));
   const origin = 'http://127.0.0.1:4173';
   const csrf = (await (await page.request.get('/api/auth/csrf')).json()).data.csrfToken;
@@ -18,6 +20,8 @@ test('real mood recommendations, fragments, preferences and existing playback', 
   await page.getByRole('button', { name: 'Add text fragment', exact: true }).click();
   await page.getByLabel('Fragment type 1').selectOption('image-caption');
   await page.getByLabel('Text fragment 1').fill('Warm memories by a rainy window.');
+  await page.getByLabel('Set energy', { exact: true }).check();
+  await page.getByLabel(/Energy ·/).fill('0.15');
   await page.getByRole('button', { name: 'Save space', exact: true }).click();
   await expect(page.getByText('All changes saved')).toBeVisible();
   await expect(page).toHaveURL(/\/compose\/[a-f\d]{24}$/);
@@ -40,21 +44,52 @@ test('real mood recommendations, fragments, preferences and existing playback', 
   const persistedRow = list.locator(':scope > li').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
   await expect(persistedRow.getByRole('button', { name: `Like ${title}`, exact: true })).toHaveAttribute('aria-pressed', 'true');
   await persistedRow.getByRole('button', { name: `Play ${title}`, exact: true }).click();
+  // Live Jamendo exact-ID lookups can intermittently return an empty result.
+  // Exercise one real user retry; no media or provider response is substituted.
+  await expect.poll(async () => (await page.evaluate(() => document.querySelector('audio').currentTime)) > .5 || await page.getByRole('alert').count() > 0, { timeout: 25000 }).toBe(true);
+  if (await page.getByRole('alert').count()) await persistedRow.getByRole('button', { name: `Play ${title}`, exact: true }).click();
   await expect.poll(() => page.evaluate(() => document.querySelector('audio').currentTime), { timeout: 25000 }).toBeGreaterThan(.5);
-  await persistedRow.getByRole('button', { name: `Save ${title} to a space`, exact: true }).click();
-  await expect(page.getByText(`“${title}” is saved to this space.`)).toBeVisible();
-  await page.getByRole('link', { name: 'Back to space', exact: true }).click();
+  const snapshot = (await (await page.request.get(`/api/spaces/${spaceId}/recommendations`)).json()).data;
+  const generatedBeforeNavigation = generations;
+  await page.getByRole('link', { name: 'Listen', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Back to originating space' })).toHaveAttribute('href', `/spaces/${spaceId}#sound`);
+  await page.getByRole('button', { name: 'Save to Space', exact: true }).click();
+  await expect(page.getByLabel('Choose your space')).toHaveValue(spaceId);
+  await page.getByRole('button', { name: 'Save track', exact: true }).click();
+  await expect(page.getByText(`“${title}” is saved to your space.`)).toBeVisible();
+  await page.getByRole('button', { name: 'Saved · choose another space', exact: true }).click();
+  await page.getByRole('button', { name: 'Save track', exact: true }).click();
+  expect((await (await page.request.get(`/api/spaces/${spaceId}/tracks`)).json()).data).toHaveLength(1);
+  await page.reload();
+  await expect(page.getByRole('link', { name: 'Back to originating space' })).toBeVisible();
+  await page.getByRole('link', { name: 'Back to originating space' }).click();
+  await expect(list).toBeVisible();
   await expect(page.getByRole('list', { name: 'Saved music' }).getByRole('heading', { name: title, exact: true })).toBeVisible();
+  const returned = (await (await page.request.get(`/api/spaces/${spaceId}/recommendations`)).json()).data;
+  expect(returned.generatedAt).toBe(snapshot.generatedAt);
+  expect(returned.tracks.map(track => track.id)).toEqual(snapshot.tracks.map(track => track.id));
+  expect(generations).toBe(generatedBeforeNavigation);
   const recommendation = page.getByRole('list', { name: 'Moodspace recommendations' }).locator(':scope > li').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
   await recommendation.getByRole('button', { name: `Dislike ${title}`, exact: true }).click();
   await expect(recommendation).toHaveCount(0);
+  // Delay the outgoing request, not its data, to verify the existing list
+  // remains usable while a manual refresh is pending.
+  let releaseRefresh;
+  const refreshGate = new Promise(resolve => { releaseRefresh = resolve; });
+  const holdRefresh = async route => { if (route.request().method() === 'POST') await refreshGate; await route.continue(); };
+  await page.route(`**/api/spaces/${spaceId}/recommendations`, holdRefresh);
   await page.getByRole('button', { name: 'Refresh my sound', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Finding your sound…', exact: true })).toBeVisible();
+  await expect(list).toBeVisible();
+  releaseRefresh();
   await expect(page.getByRole('button', { name: 'Refresh my sound', exact: true })).toBeEnabled({ timeout: 25000 });
+  await page.unroute(`**/api/spaces/${spaceId}/recommendations`, holdRefresh);
   const data = await (await page.request.get(`/api/spaces/${spaceId}/recommendations`)).json();
   expect(data.data.tracks.map(track => track.providerTrackId)).not.toContain(trackId);
   expect(data.data.profile.features.energy).toBeLessThan(.5);
   await page.getByRole('link', { name: 'Discover', exact: true }).click();
-  await page.getByRole('button', { name: 'Find my sound for Quiet memories', exact: true }).click();
+  await expect(page.getByRole('list', { name: 'Moodspace recommendations' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Find my sound for Quiet memories', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Refresh my sound', exact: true })).toBeVisible();
   expect(await page.locator('audio').count()).toBe(1);
   expect(pageErrors).toEqual([]);

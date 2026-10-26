@@ -30,6 +30,10 @@ Implemented deterministic profiles and recommendation ranking, real Jamendo cand
 
 The detailed formula now includes five feature dimensions, genre compatibility, preference affinity, metadata coverage, and repetition penalties to satisfy the user's approved Milestone 3 scope. It replaces the initial section 12 scoring sketch for the implemented version; see `docs/MILESTONE_3.md` for the authoritative formula, source weights, tests, and limitations. No raw image analysis, paid AI, full image editor, humming, lyrics, redesign, or deployment was added. Manual saved tracks remain separate from generated recommendation snapshots.
 
+## Milestone 3.1 implementation update
+
+Listen now saves directly to an owned moodspace and retains playback origin through route/tab restoration. Discover links to the space detail instead of duplicating its recommendations. Existing MongoDB snapshots remain the single durable selection source; failed/empty refreshes retain the last useful result and reads do not call Jamendo. Rule version 2 adds a disclosed Quiet + Restless conjunction, broader retrieval-tag coverage, metadata mismatch penalties, more conservative affinity, and optional persisted five-dimension sound tuning. See `docs/MILESTONE_3_1.md` for the authoritative changes, formula, verification and limitations. No deployment architecture, provider, dependency or broad redesign changed.
+
 ## 1. Product identity and boundaries
 
 **Pitch:** Give a personal atmosphere a soundtrack.

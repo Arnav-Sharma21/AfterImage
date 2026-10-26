@@ -15,7 +15,7 @@ export function buildAffinities(feedback, tracks) {
       counts.set(tag, current);
     }
   }
-  return Object.fromEntries([...counts].map(([tag, count]) => [tag, (count.positive - count.negative) / (count.positive + count.negative + 4)]));
+  return Object.fromEntries([...counts].map(([tag, count]) => [tag, (count.positive - count.negative) / (count.positive + count.negative + 8)]));
 }
 
 export function rankCandidates(candidates, profile, { dislikedIds = [], likedIds = [], savedIds = [], previousIds = [], affinities = {}, limit = 12 } = {}) {
@@ -36,9 +36,13 @@ export function rankCandidates(candidates, profile, { dislikedIds = [], likedIds
     const mood = matches.reduce((sum, tag) => sum + profile.tagWeights[tag], 0);
     let featureWeight = 0;
     let featureSum = 0;
+    let mismatch = 0;
     for (const key of DIMENSIONS) {
       if (!Number.isFinite(signals.features[key]) || !Number.isFinite(profile.features[key])) continue;
       featureWeight += DIMENSION_WEIGHTS[key];
+      const distance = Math.abs(signals.features[key] - profile.features[key]);
+      // Penalize a known strong contradiction, never a missing feature.
+      mismatch += DIMENSION_WEIGHTS[key] * Math.max(0, distance - .35) * (Number.isFinite(profile.tuning?.[key]) ? 2 : 1);
       featureSum += DIMENSION_WEIGHTS[key] * (1 - Math.abs(signals.features[key] - profile.features[key]));
     }
     const genre = signals.genres.reduce((sum, tag) => sum + (profile.genreWeights[tag] || 0), 0);
@@ -48,15 +52,17 @@ export function rankCandidates(candidates, profile, { dislikedIds = [], likedIds
     const coverage = .45 + .2 * featureWeight + (hasGenre ? .2 : 0) + .15;
     const numerator = .45 * mood + .2 * featureSum + (hasGenre ? .2 * genre : 0) + .15 * preference;
     const repetition = (saved.has(track.id) ? .18 : 0) + (previous.has(track.id) ? .1 : 0);
-    const score = Math.max(0, 100 * (numerator / coverage) * (.75 + .25 * coverage) - 100 * repetition);
+    const score = Math.max(0, 100 * (numerator / coverage) * (.75 + .25 * coverage) - 100 * repetition - 40 * mismatch);
     const bestTag = matches[0];
     const origin = profile.tagSources[bestTag]?.[0] || 'your space';
     const reasons = [`Normalized catalog tag “${bestTag}” matches ${origin}.`];
     if (Number.isFinite(signals.features.energy) && Math.abs(signals.features.energy - profile.features.energy) <= .2) reasons.push('Its estimated energy is close to your space’s direction.');
     else if (affinity > 0) reasons.push('Its catalog tags align with music you have liked.');
+    if (mismatch > 0) reasons.push('Some known metadata differs from your direction; a mismatch penalty was applied.');
+    if (Object.keys(profile.tuning || {}).length) reasons.push('Your saved sound tuning sets the target dimensions used in ranking.');
     if (saved.has(track.id)) reasons.push('Already saved here; ranked lower to leave room for new music.');
     if (previous.has(track.id)) reasons.push('Shown last time; a repetition penalty was applied.');
-    scored.push({ track, score: Math.round(score * 100) / 100, reasons, evidence: { matchedTags: matches, mood, features: featureWeight ? featureSum / featureWeight : null, genre: hasGenre ? genre : null, preference, coverage, repetition } });
+    scored.push({ track, score: Math.round(score * 100) / 100, reasons, evidence: { matchedTags: matches, mood, features: featureWeight ? featureSum / featureWeight : null, genre: hasGenre ? genre : null, preference, coverage, repetition, mismatch } });
   }
   scored.sort((a, b) => b.score - a.score || (a.track.id < b.track.id ? -1 : a.track.id > b.track.id ? 1 : 0));
   const artists = new Map();

@@ -2,12 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button.jsx';
 import { ErrorMessage, Loading } from '../../components/Feedback.jsx';
 import { api } from '../../services/api.js';
+import { useSessionStore } from '../../stores/sessionStore.js';
 import { TrackRow } from '../music/TrackRow.jsx';
 
 const EMPTY = { profile: null, tracks: [], warnings: [], stale: false };
 const featureLabels = { energy: 'Energy', melancholy: 'Melancholy', warmth: 'Warmth', intensity: 'Intensity', nostalgia: 'Nostalgia' };
 
-export function RecommendationPanel({ spaceId, revision, disabled = false, onSpaceChanged }) {
+export function RecommendationPanel(props) {
+  const userId = useSessionStore(state => state.user?.id);
+  return <SpaceRecommendations key={`${userId}:${props.spaceId}`} {...props} />;
+}
+
+function SpaceRecommendations({ spaceId, revision, disabled = false, onSpaceChanged }) {
   const [result, setResult] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -16,16 +22,21 @@ export function RecommendationPanel({ spaceId, revision, disabled = false, onSpa
   const [notice, setNotice] = useState('');
   const [undoTrack, setUndoTrack] = useState(null);
   const generationRequest = useRef(null);
+  const readRequest = useRef(null);
   useEffect(() => {
     const controller = new AbortController();
-    api(`/spaces/${spaceId}/recommendations`, { signal: controller.signal }).then(({ data }) => { setResult(data); setLoading(false); })
+    readRequest.current = controller;
+    api(`/spaces/${spaceId}/recommendations`, { signal: controller.signal }).then(({ data }) => { if (!controller.signal.aborted) { setResult(data); setLoading(false); } })
       .catch(failure => { if (failure.name !== 'AbortError') { setError(failure.message); setLoading(false); } });
-    return () => { controller.abort(); generationRequest.current?.abort(); };
+    return () => { controller.abort(); };
   }, [spaceId, revision]);
+
+  useEffect(() => () => generationRequest.current?.abort(), [spaceId]);
 
   async function generate() {
     if (busy || disabled) return;
     generationRequest.current?.abort();
+    readRequest.current?.abort();
     const controller = new AbortController();
     generationRequest.current = controller;
     setBusy(true); setError(''); setNotice('');
@@ -68,16 +79,16 @@ export function RecommendationPanel({ spaceId, revision, disabled = false, onSpa
     finally { setPendingId(null); }
   }
 
-  return <section className="recommendation-panel" aria-labelledby={`sound-${spaceId}`}>
+  return <section id="sound" className="recommendation-panel" aria-labelledby={`sound-${spaceId}`}>
     <div className="section-heading"><div><h2 id={`sound-${spaceId}`}>Find your sound.</h2><p className="fine-print">Your moods, words, saved music, and feedback shape this selection.</p></div><Button onClick={generate} disabled={busy || disabled || Boolean(pendingId)}>{busy ? 'Finding your sound…' : result.profile ? 'Refresh my sound' : 'Find my sound'}</Button></div>
     {disabled ? <p className="fine-print">Save your current edits before finding music or changing this selection.</p> : null}
     <ErrorMessage message={error} />
     {notice ? <p className="success-message" role="status">{notice}</p> : null}
     {undoTrack ? <Button variant="text" onClick={() => react(undoTrack, 'neutral')} disabled={Boolean(pendingId) || disabled}>Undo dislike</Button> : null}
     {loading ? <Loading>Retrieving your music direction…</Loading> : null}
-    {result.profile ? <details className="mood-profile"><summary>Your music direction</summary><dl>{Object.entries(featureLabels).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{Number.isFinite(result.profile.features[key]) ? `${result.profile.features[key] < .35 ? 'Low' : result.profile.features[key] > .7 ? 'High' : 'Moderate'} · ${result.profile.features[key].toFixed(2)}` : 'Unknown'}</dd></div>)}</dl><p className="fine-print">Editorial estimates from explicit inputs and catalog metadata, not measured emotions.</p><ul>{result.profile.sources.map(source => <li key={source.kind}>{source.kind === 'moods' ? 'Mood tags' : source.kind === 'words' ? 'Matched words' : source.kind === 'savedMusic' ? 'Saved music' : 'Recent likes'}: {source.matches.join(', ')}</li>)}</ul><p className="fine-print">English word matching only. Captions are text; image pixels are not analyzed.</p></details> : !loading ? <p className="search-hint">Give your saved space a soundtrack. We will search the real Jamendo catalog and explain the matches.</p> : null}
+    {result.profile ? <details className="mood-profile"><summary>Your music direction</summary><dl>{Object.entries(featureLabels).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{Number.isFinite(result.profile.features[key]) ? `${result.profile.features[key] < .35 ? 'Low' : result.profile.features[key] > .7 ? 'High' : 'Moderate'} · ${result.profile.features[key].toFixed(2)}` : 'Unknown'}</dd></div>)}</dl><p className="fine-print">{result.profile.interpretations?.join(" ")}</p>{Object.keys(result.profile.tuning || {}).length ? <p className="fine-print">Saved sound tuning overrides: {Object.keys(result.profile.tuning).join(", ")}. Edit these in Compose.</p> : null}<p className="fine-print">Editorial estimates from explicit inputs and catalog metadata, not measured emotions.</p><ul>{result.profile.sources.map(source => <li key={source.kind}>{source.kind === 'moods' ? 'Mood tags' : source.kind === 'words' ? 'Matched words' : source.kind === 'savedMusic' ? 'Saved music' : 'Recent likes'}: {source.matches.join(', ')}</li>)}</ul><p className="fine-print">English word matching only. Captions are text; image pixels are not analyzed.</p></details> : !loading ? <p className="search-hint">Give your saved space a soundtrack. We will search the real Jamendo catalog and explain the matches.</p> : null}
     {result.stale ? <p className="recommendation-stale">Your space or preferences changed. Refresh to use the latest signals.</p> : null}
     {result.warnings?.length ? <ul className="recommendation-warnings">{result.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul> : null}
-    {result.tracks.length ? <><ul className="track-list" aria-label="Moodspace recommendations">{result.tracks.map(track => <TrackRow key={track.id} track={track} onSave={save} saveDisabled={disabled || Boolean(pendingId) || track.isSaved} saveLabel={track.isSaved ? 'Saved to space' : 'Save to this space'}><div className="recommendation-context"><ul aria-label={`Why ${track.title}`}>{track.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul><div className="feedback-actions"><Button variant="secondary" aria-pressed={track.reaction === 'like'} aria-label={`Like ${track.title}`} onClick={() => react(track, track.reaction === 'like' ? 'neutral' : 'like')} disabled={Boolean(pendingId) || disabled}>{track.reaction === 'like' ? 'Liked' : 'Like'}</Button><Button variant="text" aria-label={`Dislike ${track.title}`} onClick={() => react(track, 'dislike')} disabled={Boolean(pendingId) || disabled}>Less like this</Button></div></div></TrackRow>)}</ul><p className="fine-print feedback-scope">Your feedback influences recommendations across all your spaces. Dislikes are excluded; refreshes can still repeat suitable tracks in a small catalog.</p></> : result.profile && !busy ? <p className="loading-state">No matching tracks to show. Try another mood or add a descriptive fragment, then refresh.</p> : null}
+    {result.tracks.length ? <><ul className="track-list" aria-label="Moodspace recommendations">{result.tracks.map(track => <TrackRow key={track.id} track={track} sourceSpaceId={spaceId} onSave={save} saveDisabled={disabled || Boolean(pendingId) || track.isSaved} saveLabel={track.isSaved ? 'Saved to space' : 'Save to this space'}><div className="recommendation-context"><ul aria-label={`Why ${track.title}`}>{track.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul><div className="feedback-actions"><Button variant="secondary" aria-pressed={track.reaction === 'like'} aria-label={`Like ${track.title}`} onClick={() => react(track, track.reaction === 'like' ? 'neutral' : 'like')} disabled={Boolean(pendingId) || disabled}>{track.reaction === 'like' ? 'Liked' : 'Like'}</Button><Button variant="text" aria-label={`Dislike ${track.title}`} onClick={() => react(track, 'dislike')} disabled={Boolean(pendingId) || disabled}>Less like this</Button></div></div></TrackRow>)}</ul><p className="fine-print feedback-scope">Your feedback influences recommendations across all your spaces. Dislikes are excluded; refreshes can still repeat suitable tracks in a small catalog.</p></> : result.profile && !busy ? <p className="loading-state">No matching tracks to show. Try another mood or add a descriptive fragment, then refresh.</p> : null}
   </section>;
 }

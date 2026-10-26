@@ -1,5 +1,7 @@
 # Milestone 3 — mood-to-music intelligence
 
+Follow-up: [Milestone 3.1](MILESTONE_3_1.md) supersedes the UX, empty-refresh behavior, and algorithm changes documented there. This file records the original milestone.
+
 Implemented locally on October 26, 2026. This milestone adds deterministic recommendations and private preference feedback to the existing authentication, moodspace, Jamendo search, playback, and saved-track workflows. No AI service, pixel analysis, paid integration, commit, push, or deployment is involved.
 
 ## Implemented experience

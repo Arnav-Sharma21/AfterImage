@@ -4,9 +4,9 @@ import { Button } from '../../components/Button.jsx';
 import { Loading } from '../../components/Feedback.jsx';
 import { api } from '../../services/api.js';
 
-export function SaveTrackDialog({ track, onClose, onSaved }) {
+export function SaveTrackDialog({ track, onClose, onSaved, defaultSpaceId }) {
   const [spaces, setSpaces] = useState([]);
-  const [spaceId, setSpaceId] = useState('');
+  const [spaceId, setSpaceId] = useState(defaultSpaceId || '');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -14,17 +14,21 @@ export function SaveTrackDialog({ track, onClose, onSaved }) {
   const [error, setError] = useState('');
   useEffect(() => {
     const controller = new AbortController();
-    api(`/spaces?limit=50&page=${page}`, { signal: controller.signal }).then(({ data, meta }) => {
-      setSpaces(data); setSpaceId(data[0]?.id || ''); setHasMore(meta.hasMore); setLoading(false);
+    Promise.all([
+      api(`/spaces?limit=50&page=${page}`, { signal: controller.signal }),
+      defaultSpaceId ? api(`/spaces/${defaultSpaceId}`, { signal: controller.signal }).catch(failure => { if (failure.name === 'AbortError') throw failure; return { data: null }; }) : Promise.resolve({ data: null })
+    ]).then(([{ data, meta }, { data: origin }]) => {
+      if (origin && !data.some(space => space.id === origin.id)) data = [origin, ...data];
+      setSpaces(data); setSpaceId(current => data.some(space => space.id === current) ? current : data[0]?.id || ''); setHasMore(meta.hasMore); setLoading(false);
     }).catch(failure => { if (failure.name !== 'AbortError') { setError(failure.message); setLoading(false); } });
     return () => controller.abort();
-  }, [page]);
+  }, [page, defaultSpaceId]);
   async function save() {
     if (!spaceId || busy) return;
     setBusy(true); setError('');
     try {
       await api(`/spaces/${spaceId}/tracks/${track.provider}/${track.providerTrackId}`, { method: 'PUT', body: {} });
-      onSaved(`“${track.title}” is saved to your space.`);
+      onSaved(`“${track.title}” is saved to your space.`, spaceId);
       onClose();
     } catch (failure) { if (failure.name !== 'AbortError') setError(failure.message); }
     finally { setBusy(false); }

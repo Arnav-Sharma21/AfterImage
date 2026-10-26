@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { Moodspace } from '../src/models/Moodspace.js';
+import { User } from '../src/models/User.js';
 import { UserFeedback } from '../src/models/UserFeedback.js';
 import { Track } from '../src/models/Track.js';
 import { AppError } from '../src/middleware/errors.js';
@@ -65,7 +66,9 @@ describe('recommendation HTTP/database flow with synthetic provider contract fix
     await mutate(client, 'post', path, { revision: 0 }).expect(200);
     const reaction = `${path}/jamendo/1/feedback`;
     await mutate(client, 'put', reaction, { reaction: 'like' }).expect(200);
+    const beforeRepeat = (await User.findOne({ email: 'reco-feedback@example.com' }).lean()).preferenceRevision;
     await mutate(client, 'put', reaction, { reaction: 'like' }).expect(200);
+    expect((await User.findOne({ email: 'reco-feedback@example.com' }).lean()).preferenceRevision).toBe(beforeRepeat);
     expect(await UserFeedback.countDocuments({ trackId: 'jamendo:1' })).toBe(1);
     expect((await client.agent.get(path)).body.data.tracks.find(track => track.id === 'jamendo:1').reaction).toBe('like');
     await mutate(client, 'put', reaction, { reaction: 'dislike' }).expect(200);
@@ -102,7 +105,11 @@ describe('recommendation HTTP/database flow with synthetic provider contract fix
     expect((await client.agent.get(path)).body.data.generatedAt).toBe(initial.body.data.generatedAt);
     mode = 'empty';
     const empty = await mutate(client, 'post', path, { revision: 0 }).expect(200);
-    expect(empty.body.data.tracks).toEqual([]);
+    expect(empty.body.data.tracks.map(track => track.id)).toEqual(initial.body.data.tracks.map(track => track.id));
+    expect(empty.body.data.generatedAt).toBe(initial.body.data.generatedAt);
+    expect((await client.agent.get(path)).body.data.tracks).toHaveLength(2);
+    const newSpace = await space(client, 'Empty first selection');
+    expect((await mutate(client, 'post', `/api/spaces/${newSpace.id}/recommendations`, { revision: 0 }).expect(200)).body.data.tracks).toEqual([]);
     expect(empty.body.data.warnings.length).toBeGreaterThan(0);
     mode = 'normal';
     const missingApp = createApp(config, database.store);
@@ -132,6 +139,37 @@ describe('recommendation HTTP/database flow with synthetic provider contract fix
     await mutate(client, 'patch', `/api/spaces/${owned.id}`, { revision: 1, title: 'A remembered place' }).expect(200);
     expect((await client.agent.get(`/api/spaces/${owned.id}`)).body.data.fragments).toEqual(fragments);
     await mutate(client, 'patch', `/api/spaces/${owned.id}`, { revision: 2, fragments: [...fragments, ...fragments] }).expect(422);
+  });
+  it('isolates persisted sessions by owner/space and reads without new provider calls', async () => {
+    const owner = await account('session-owner@example.com');
+    const other = await account('session-other@example.com');
+    const a = await space(owner);
+    const b = await space(owner, 'Separate session');
+    const path = `/api/spaces/${a.id}/recommendations`;
+    const initial = (await mutate(owner, 'post', path, { revision: 0 }).expect(200)).body.data;
+    const before = calls;
+    for (let i = 0; i < 3; i++) expect((await owner.agent.get(path).expect(200)).body.data.generatedAt).toBe(initial.generatedAt);
+    expect((await owner.agent.get(`/api/spaces/${b.id}/recommendations`).expect(200)).body.data.profile).toBeNull();
+    await other.agent.get(path).expect(404);
+    expect(calls).toBe(before);
+  });
+  it('validates, persists and applies sound tuning with revision invalidation', async () => {
+    const owner = await account('tuning-owner@example.com');
+    const other = await account('tuning-other@example.com');
+    const a = await space(owner);
+    const path = `/api/spaces/${a.id}`;
+    await mutate(owner, 'post', `${path}/recommendations`, { revision: 0 }).expect(200);
+    await mutate(other, 'patch', path, { revision: 0, soundTuning: { energy: .05 } }).expect(404);
+    await mutate(owner, 'patch', path, { revision: 0, soundTuning: { energy: 2 } }).expect(422);
+    await mutate(owner, 'patch', path, { revision: 0, soundTuning: { secret: 1 } }).expect(422);
+    await mutate(owner, 'patch', path, { revision: 0, soundTuning: { energy: .05, melancholy: .9 } }).expect(200);
+    expect((await owner.agent.get(path)).body.data.soundTuning).toEqual({ energy: .05, melancholy: .9 });
+    expect((await owner.agent.get(`${path}/recommendations`)).body.data.stale).toBe(true);
+    const fresh = (await mutate(owner, 'post', `${path}/recommendations`, { revision: 1 }).expect(200)).body.data;
+    expect(fresh.profile.features.energy).toBe(.05);
+    expect(fresh.profile.features.melancholy).toBe(.9);
+    await mutate(owner, 'patch', path, { revision: 1, soundTuning: {} }).expect(200);
+    expect((await owner.agent.get(path)).body.data.soundTuning).toEqual({});
   });
   it('saves recent server-verified recommendations during a transient lookup failure', async () => {
     const client = await account('reco-cached-save@example.com');

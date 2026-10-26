@@ -7,6 +7,7 @@ const fields = {
   description: z.string().trim().max(1000, 'Use no more than 1,000 characters.'),
   moods: z.array(z.enum(MOODS)).min(1, 'Choose at least one mood.').max(5, 'Choose up to five moods.')
     .refine(value => new Set(value).size === value.length, 'Choose each mood only once.'),
+  soundTuning: z.object(Object.fromEntries(['energy', 'melancholy', 'warmth', 'intensity', 'nostalgia'].map(key => [key, z.number().min(0).max(1).optional()]))).strict().optional(),
   fragments: z.array(fragmentSchema).max(10, 'Use up to ten fragments.').refine(items => new Set(items.map(item => item.id)).size === items.length, 'Each fragment needs its own ID.').optional()
 };
 

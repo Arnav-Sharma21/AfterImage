@@ -72,6 +72,24 @@ describe('music routes with real MongoDB and an explicitly test-only provider co
     expect((await client.agent.get(`/api/spaces/${space.id}/tracks`)).body.data).toEqual([]);
     await mutation(client, 'delete', `/api/spaces/${space.id}`, { revision: 3 }).expect(200);
   });
+  it('saves freshly played metadata without another provider call, and expires that cache', async () => {
+    const client = await account('listen-save-cache@example.com');
+    const owned = (await mutation(client, 'post', '/api/spaces', { title: 'Listen saves', moods: ['Quiet'] }).expect(201)).body.data;
+    await client.agent.get('/api/music/tracks/jamendo/456/playback').expect(200);
+    const before = getTrackCalls;
+    const metadata = await Track.findById('jamendo:456').lean();
+    const path = `/api/spaces/${owned.id}/tracks/jamendo/456`;
+    await mutation(client, 'put', path).expect(200);
+    await mutation(client, 'put', path).expect(200);
+    expect(getTrackCalls).toBe(before);
+    expect((await Track.findById('jamendo:456').lean()).verifiedAt).toEqual(metadata.verifiedAt);
+    expect((await Moodspace.findById(owned.id).lean()).savedTracks).toHaveLength(1);
+    expect(metadata).not.toHaveProperty('streamUrl');
+    await mutation(client, 'delete', path).expect(200);
+    await Track.updateOne({ _id: 'jamendo:456' }, { $set: { verifiedAt: new Date(Date.now() - 6 * 60 * 1000) } });
+    await mutation(client, 'put', path).expect(200);
+    expect(getTrackCalls).toBe(before + 1);
+  });
   it('enforces ownership before provider access and rejects supplied metadata', async () => {
     const owner = await account('track-owner@example.com');
     const outsider = await account('track-outsider@example.com');

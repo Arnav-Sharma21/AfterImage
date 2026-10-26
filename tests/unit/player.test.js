@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { usePlayerStore } from '../../client/src/stores/playerStore.js';
+import { clearPlayerSession, persistQueue, restoreQueue, usePlayerStore } from '../../client/src/stores/playerStore.js';
 import { createAudioController } from '../../client/src/features/player/audioController.js';
 
 const track = id => ({ id: `jamendo:${id}`, provider: 'jamendo', providerTrackId: String(id), title: `Test ${id}`, artistName: 'Test fixture', isPlayable: true, streamUrl: 'https://example.test/fixture.mp3' });
@@ -15,6 +15,25 @@ describe('player queue and race handling (simulated media events)', () => {
     expect(usePlayerStore.getState().currentId).toBe('jamendo:1');
     state.removeFromQueue('jamendo:2');
     expect(usePlayerStore.getState().currentId).toBe('jamendo:1');
+  });
+  it('retains source space, strips streams and isolates restored queues by user', () => {
+    const values = new Map();
+    const previous = globalThis.sessionStorage;
+    globalThis.sessionStorage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+    try {
+      usePlayerStore.getState().playTrack({ ...track(1), sourceSpaceId: 'space-a' });
+      persistQueue('user-a', usePlayerStore.getState());
+      usePlayerStore.getState().reset();
+      restoreQueue('user-b');
+      expect(usePlayerStore.getState().queue).toEqual([]);
+      restoreQueue('user-a');
+      expect(usePlayerStore.getState().queue[0]).toMatchObject({ sourceSpaceId: 'space-a' });
+      expect(usePlayerStore.getState().queue[0]).not.toHaveProperty('streamUrl');
+      expect(usePlayerStore.getState().desiredPlaying).toBe(false);
+      clearPlayerSession('user-a');
+      restoreQueue('user-a');
+      expect(usePlayerStore.getState().queue).toEqual([]);
+    } finally { if (previous) globalThis.sessionStorage = previous; else delete globalThis.sessionStorage; }
   });
   it('handles queue boundaries, restart/previous, volume and invalid seeking', () => {
     const state = usePlayerStore.getState();
@@ -41,12 +60,13 @@ describe('player queue and race handling (simulated media events)', () => {
     const pending = [];
     const dispose = createAudioController(media, usePlayerStore, () => new Promise(resolve => pending.push(resolve)));
     usePlayerStore.getState().playTrack(track(1));
-    usePlayerStore.getState().playTrack(track(2));
+    usePlayerStore.getState().playTrack({ ...track(2), sourceSpaceId: 'origin-space' });
     pending[1]({ data: { ...track(2), streamUrl: 'https://example.test/second.mp3' } });
     await Promise.resolve();
     pending[0]({ data: { ...track(1), streamUrl: 'https://example.test/first.mp3' } });
     await Promise.resolve();
     expect(media.src).toBe('https://example.test/second.mp3');
+    expect(usePlayerStore.getState().queue.find(item => item.id === 'jamendo:2').sourceSpaceId).toBe('origin-space');
     dispose();
   });
   it('turns a media error into a recoverable stopped state', async () => {

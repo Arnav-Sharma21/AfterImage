@@ -34,6 +34,15 @@ export function textSignals(value) {
 
 export function buildMoodProfile(space, savedTracks = [], likedTracks = []) {
   const explicit = [...new Set(space.moods || [])].filter(name => MOOD_RULES[name]).map(name => ({ ...MOOD_RULES[name], source: `mood “${name}”`, label: name }));
+  const interpretations = [];
+  if (space.moods?.includes('Quiet') && space.moods?.includes('Restless')) {
+    // An editorial conjunction rule: a quiet setting with internal tension,
+    // rather than the neutral arithmetic midpoint of quiet and energetic rock.
+    const combined = { tags: ['ambient', 'melancholic', 'electronic', 'relaxing', 'chillout', 'soundtrack'], genres: ['ambient', 'electronic', 'soundtrack'],
+      features: { energy: .28, melancholy: .65, warmth: .3, intensity: .5, nostalgia: .6 }, source: 'mixed moods “Quiet + Restless”', label: 'Quiet + Restless' };
+    explicit.splice(0, explicit.length, ...explicit.filter(signal => !['Quiet', 'Restless'].includes(signal.label)), combined);
+    interpretations.push('Quiet + Restless is interpreted as restrained energy with internal tension, not energetic rock. Tune the dimensions if you mean something else.');
+  }
   const documents = [
     { text: space.title, label: 'title' }, { text: space.description, label: 'description' },
     ...(space.fragments || []).map(fragment => ({ text: fragment.text, label: fragment.type === 'image-caption' ? 'image caption' : fragment.type }))
@@ -79,9 +88,13 @@ export function buildMoodProfile(space, savedTracks = [], likedTracks = []) {
       }
     }
   }
+  const features = Object.fromEntries(DIMENSIONS.map(key => [key, featureTotals[key].weight ? featureTotals[key].sum / featureTotals[key].weight : null]));
+  const tuning = Object.fromEntries(DIMENSIONS.filter(key => Number.isFinite(space.soundTuning?.[key])).map(key => [key, space.soundTuning[key]]));
+  Object.assign(features, tuning);
   return {
+    interpretations, tuning,
     algorithmVersion: ALGORITHM_VERSION,
-    features: Object.fromEntries(DIMENSIONS.map(key => [key, featureTotals[key].weight ? featureTotals[key].sum / featureTotals[key].weight : null])),
+    features,
     tagWeights: normalized(tagWeights), genreWeights: normalized(genreWeights), tagSources,
     sources: groups.map(group => ({ kind: group.key, weight: group.weight / (sourceTotal || 1), matches: [...new Set(group.signals.map(signal => signal.label))].slice(0, 20) })),
     limitations: ['Rule-based English word matching and editorial metadata estimates.', 'Image captions are text inputs; raw image pixels are not analyzed.']
@@ -89,10 +102,10 @@ export function buildMoodProfile(space, savedTracks = [], likedTracks = []) {
 }
 
 export function buildCandidateQueries(profile, generation = 0) {
-  const tags = Object.entries(profile.tagWeights).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([tag]) => tag);
+  const tags = Object.entries(profile.tagWeights).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([tag]) => tag);
   if (!tags.length) return [];
   const energy = profile.features.energy;
   const speed = energy !== null && energy < .35 ? ['verylow', 'low'] : energy !== null && energy > .7 ? ['high', 'veryhigh'] : [];
   const offset = generation % 3 * 40;
-  return [{ tags, speed, limit: 40, offset }, { tags, speed: [], limit: 40, offset: speed.length ? offset : (offset + 40) % 120 }];
+  return [{ tags: tags.slice(0, 3), speed, limit: 40, offset }, { tags: tags.length > 3 ? tags.slice(3, 6) : tags, speed: [], limit: 40, offset: speed.length || tags.length > 3 ? offset : (offset + 40) % 120 }];
 }

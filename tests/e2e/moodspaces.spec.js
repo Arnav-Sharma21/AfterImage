@@ -46,7 +46,7 @@ test('account → persisted moodspace → edit → re-login → delete', async (
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).last().click();
   await expect(page.getByRole('heading', { name: 'Before the dawn' })).toBeVisible();
-  await page.getByRole('link', { name: /Before the dawn/ }).click();
+  await page.getByRole('link').filter({ has: page.getByRole('heading', { name: 'Before the dawn', exact: true }) }).click();
   await expect(page.getByText('The city is quiet again.')).toBeVisible();
   await page.getByRole('button', { name: 'Delete space', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Delete space', exact: true }).click();

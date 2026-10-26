@@ -10,6 +10,7 @@ const moodspaceSchema = new mongoose.Schema({
     required: true,
     validate: value => value.length >= 1 && value.length <= 5 && new Set(value).size === value.length
   },
+  soundTuning: { type: new mongoose.Schema(Object.fromEntries(['energy', 'melancholy', 'warmth', 'intensity', 'nostalgia'].map(key => [key, { type: Number, min: 0, max: 1 }])), { _id: false }), default: () => ({}) },
   revision: { type: Number, default: 0, min: 0, required: true },
   fragments: { type: [new mongoose.Schema({
     id: { type: String, required: true },

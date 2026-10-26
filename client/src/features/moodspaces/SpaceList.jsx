@@ -5,7 +5,7 @@ import { Button } from '../../components/Button.jsx';
 import { ErrorMessage, Loading } from '../../components/Feedback.jsx';
 import { api } from '../../services/api.js';
 
-export function SpaceList({ onFindSound }) {
+export function SpaceList() {
   const [state, setState] = useState({ spaces: [], loading: true, error: '', hasMore: false });
   const [page, setPage] = useState(1);
   const [attempt, setAttempt] = useState(0);
@@ -37,7 +37,7 @@ export function SpaceList({ onFindSound }) {
             <span className="space-index" aria-hidden="true">{String((page - 1) * 20 + index + 1).padStart(2, '0')}</span>
             <div className="space-row-content"><h3>{space.title}</h3><p>{space.description || 'A feeling taking shape.'}</p><div className="tag-list">{space.moods.map(mood => <span key={mood}>{mood}</span>)}</div></div>
             <Arrow diagonal />
-          </Link>{onFindSound ? <Button variant="text" onClick={() => onFindSound(space)} aria-label={`Find my sound for ${space.title}`}>Find my sound</Button> : null}</div>
+          </Link><Link className="text-link" to={`/spaces/${space.id}#sound`} aria-label={`Find my sound for ${space.title}`}>Find my sound</Link></div>
         </li>)}
       </ol>
       {page > 1 || state.hasMore ? <div className="pagination"><Button variant="secondary" disabled={page === 1} onClick={() => changePage(page - 1)}>Previous page</Button><span>Page {page}</span><Button variant="secondary" disabled={!state.hasMore} onClick={() => changePage(page + 1)}>Next page</Button></div> : null}

@@ -29,7 +29,7 @@ export async function readRecommendations(userId, id) {
   const tracks = snapshot.tracks.filter(item => byId.has(item.trackId) && reactions.get(item.trackId) !== 'dislike')
     .map(item => ({ ...serializeTrack(byId.get(item.trackId)), score: item.score, reasons: item.reasons, evidence: item.evidence, reaction: reactions.get(item.trackId) || 'neutral', isSaved: saved.has(item.trackId) }));
   return { profile: snapshot.profile, tracks, generatedAt: snapshot.generatedAt, generation: snapshot.generation, algorithmVersion: snapshot.algorithmVersion,
-    stale: snapshot.contentRevision !== space.revision || snapshot.preferenceRevision !== (user?.preferenceRevision || 0), warnings: snapshot.warnings || [] };
+    stale: snapshot.algorithmVersion !== ALGORITHM_VERSION || snapshot.contentRevision !== space.revision || snapshot.preferenceRevision !== (user?.preferenceRevision || 0), warnings: snapshot.warnings || [] };
 }
 
 export async function generateRecommendations(userId, id, revision, music) {
@@ -79,6 +79,12 @@ export async function generateRecommendations(userId, id, revision, music) {
     affinities: buildAffinities(recentFeedback, metadata)
   });
   if (!ranked.length) warnings.push('No eligible tracks with matching catalog evidence were found. Try changing the space’s mood tags or words.');
+  // An empty refresh is not a successful replacement for a useful selection.
+  // Keep the owned persisted snapshot; reads still remove current dislikes.
+  if (!ranked.length && space.recommendation?.tracks.length) {
+    const previous = await readRecommendations(userId, id);
+    return { ...previous, warnings: [...previous.warnings, ...new Set(warnings), 'Keeping your previous selection because this refresh found no new matches.'] };
+  }
   await cacheTrackMetadata(ranked.map(item => item.track));
   const snapshot = {
     generation: generation + 1, contentRevision: revision, preferenceRevision: user?.preferenceRevision || 0,

@@ -14,7 +14,7 @@ export const usePlayerStore = create((set, get) => ({
     const state = get();
     const exists = state.queue.some(item => item.id === track.id);
     if (!exists && state.queue.length >= QUEUE_LIMIT) { set({ error: 'Your queue is full. Remove a track first.' }); return; }
-    set({ queue: exists ? state.queue : [...state.queue, queueTrack(track)], currentId: track.id,
+    set({ queue: exists ? state.queue.map(item => item.id === track.id && track.sourceSpaceId ? { ...item, sourceSpaceId: track.sourceSpaceId } : item) : [...state.queue, queueTrack(track)], currentId: track.id,
       desiredPlaying: true, error: '', selectionVersion: state.selectionVersion + (state.currentId !== track.id || state.status === 'error' ? 1 : 0) });
   },
   addToQueue(track) {
