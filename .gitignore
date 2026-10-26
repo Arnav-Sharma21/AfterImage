@@ -1,0 +1,24 @@
+# dependencies and builds
+node_modules/
+client/node_modules/
+server/node_modules/
+dist/
+client/dist/
+server/dist/
+coverage/
+
+# secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+
+# personal IDE/system files
+.DS_Store
+*.log
+.vscode/
+
+# design inspiration includes third-party screenshots; never publish or ship these
+/design/references/
