@@ -12,14 +12,18 @@ import { AppError, errorHandler, notFound } from './middleware/errors.js';
 import { protectMutations } from './middleware/security.js';
 import { authRoutes } from './routes/authRoutes.js';
 import { spaceRoutes } from './routes/spaceRoutes.js';
+import { musicRoutes } from './routes/musicRoutes.js';
+import { createJamendoProvider, JAMENDO_IMAGE_ORIGINS, JAMENDO_MEDIA_ORIGINS } from './providers/jamendo.js';
+import { createMusicService } from './services/musicService.js';
 
 const buildDirectory = fileURLToPath(new URL('../../client/dist/', import.meta.url));
 
-export function createApp(config, sessionStore) {
+export function createApp(config, sessionStore, { musicProvider } = {}) {
   if (!sessionStore) throw new Error('A persistent session store is required.');
   const app = express();
   const isProduction = config.nodeEnv === 'production';
   app.locals.isProduction = isProduction;
+  app.locals.music = createMusicService(musicProvider || createJamendoProvider({ clientId: config.jamendoClientId }));
   app.disable('x-powered-by');
   if (config.trustProxyHops) app.set('trust proxy', config.trustProxyHops);
   app.use((req, res, next) => {
@@ -28,7 +32,11 @@ export function createApp(config, sessionStore) {
     next();
   });
   app.use(helmet({
-    contentSecurityPolicy: { directives: { 'upgrade-insecure-requests': isProduction ? [] : null } },
+    contentSecurityPolicy: { directives: {
+      'upgrade-insecure-requests': isProduction ? [] : null,
+      'media-src': ["'self'", ...JAMENDO_MEDIA_ORIGINS],
+      'img-src': ["'self'", 'data:', ...JAMENDO_IMAGE_ORIGINS]
+    } },
     strictTransportSecurity: isProduction ? undefined : false
   }));
   app.get('/api/health', (_req, res) => res.json({ data: { status: 'ok' } }));
@@ -50,6 +58,7 @@ export function createApp(config, sessionStore) {
   app.use('/api', protectMutations(config.appOrigin));
   app.use('/api/auth', authRoutes(config.authLimit));
   app.use('/api/spaces', spaceRoutes);
+  app.use('/api/music', musicRoutes());
   app.use('/api', notFound);
 
   if (existsSync(path.join(buildDirectory, 'index.html'))) {

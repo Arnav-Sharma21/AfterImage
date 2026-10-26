@@ -6,7 +6,7 @@ An original music-first application that maps personal visual moodspaces to musi
 
 The first working slice includes email/password accounts, MongoDB-backed sessions, and private moodspaces with a title, description, and 1–5 mood tags. Create, retrieve, edit, and delete spaces through the React UI. Edits use revisions to prevent stale tabs from overwriting newer changes. Failed saves retain the draft; session expiry offers reauthentication.
 
-Music search, recommendations, playback, image/quote blocks, and advanced effects are later milestones. The interface labels listening as unavailable and contains no fabricated music results.
+Milestone 2 adds real Jamendo search, artwork/metadata, direct audio playback, a shared queue, and saved tracks inside owned moodspaces. Playback continues across Discover, Compose, and Listen. Play/pause, previous/next, seeking, volume/mute, buffering, retries, and track-ended advance use one real HTML audio element. Recommendations, image/quote blocks, and advanced effects remain future milestones.
 
 ## Local setup
 
@@ -23,6 +23,7 @@ Edit `server/.env` before starting:
 - `MONGODB_URI`: your own MongoDB Atlas connection string, including a database name such as `afterimage`, or an actual running local MongoDB URI. For Atlas, create a database user with read/write access to this database, URL-encode its password in the URI, and add your development machine's IP to the Atlas network access list. Example shape: `mongodb+srv://<user>:<encoded-password>@<cluster>/afterimage?retryWrites=true&w=majority`.
 - `SESSION_SECRET`: a unique random value with at least 32 characters. Generate one locally with the command below. The placeholder is deliberately rejected at startup.
 - `APP_ORIGIN`: keep `http://127.0.0.1:5173` for the default development setup. Origin matching is exact: use this address in your browser, rather than switching between it and `localhost`.
+- `JAMENDO_CLIENT_ID`: your own client ID from the [Jamendo developer portal](https://devportal.jamendo.com/), stored on the backend only. If absent, accounts and moodspaces still work and music requests return a clear configuration error.
 
 ```bash
 node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
@@ -31,7 +32,7 @@ npm run dev
 
 Open **http://127.0.0.1:5173**. Vite proxies `/api` to Express at `http://127.0.0.1:3001`; the browser uses relative API URLs and a necessary HttpOnly session cookie. No CORS configuration or browser-side secret is needed. `client/.env` is optional unless you change the API target.
 
-No Atlas credentials are bundled, and no database is simulated when configuration is missing. The backend fails with an actionable setup error. Keep real `.env` files private; they are ignored by Git. This milestone needs no music-provider key.
+No credentials are bundled, and no database or music catalog is simulated when configuration is missing. Keep real `.env` files private; they are ignored by Git. Existing local environment files should be edited rather than overwritten with the example.
 
 ## Commands
 
@@ -39,7 +40,7 @@ No Atlas credentials are bundled, and no database is simulated when configuratio
 | --- | --- |
 | `npm run dev` | Run Vite and the Node watch server together |
 | `npm run lint` | Lint client, server, shared code, and tests |
-| `npm test` | Configuration/validation and real MongoDB HTTP integration tests |
+| `npm test` | Configuration, provider contract, queue/race logic, and real MongoDB HTTP tests |
 | `npm run test:watch` | Watch the same test suite |
 | `npm run build` | Build the Vite frontend into `client/dist` |
 | `npm start` | Start Express and serve the built frontend on one origin |
@@ -71,11 +72,49 @@ CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e
 
 Playwright starts a built-app server on port 4173 with a fresh test database. It exercises desktop/mobile signup, creation, refresh persistence, editing, relogin, deletion, keyboard mood selection, save failure, expired-session recovery, and unsaved-edit guards. Its screenshots/traces are ignored by Git. Test accounts and short-lived test secrets are confined to the disposable database/server.
 
-Current verification and exact limitations are recorded in [the milestone handoff](docs/MILESTONE_1.md). Atlas connectivity, real hosting, HTTPS cookies behind the production proxy, and other browser engines still require environment-specific verification.
+The default browser run explicitly skips the live music journey. To verify real catalog results, artwork, playback controls, queue/ended behavior, route continuity, saved-track persistence, and failure recovery, enable the external integration test:
+
+```bash
+npm run build
+RUN_LIVE_MUSIC_TESTS=1 CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e
+```
+
+This reads only the Jamendo key from `server/.env` for music access; its accounts and saved tracks use a disposable test database, never the configured application database. It depends on current provider responses and external media access. It uses no fake catalog or audio. Synthetic provider fixtures in unit/HTTP tests are explicitly test-only and test error/security behavior.
+
+The smaller standalone feasibility probe uses the actual application adapter and checks Chromium audio decoding/progress, pause, seek, and volume:
+
+```bash
+CHROMIUM_PATH=/usr/bin/chromium node server/scripts/verify-provider.js
+# Also play a short eligible result from start to finish, if one is <=30 seconds:
+MUSIC_VERIFY_FULL_TRACK=1 CHROMIUM_PATH=/usr/bin/chromium node server/scripts/verify-provider.js
+```
+
+Run live probes sequentially. Jamendo has returned intermittent empty responses during verification. The adapter retries an empty/transient response once within one eight-second deadline; final empty/error responses remain visible. Stream URLs rotate, so tracks are identified by provider/ID and resolved again for playback.
+
+See [Milestone 1](docs/MILESTONE_1.md) and [Milestone 2 verification](docs/MILESTONE_2.md) for actual results and limitations. Real hosting, HTTPS cookies/media policy on the deployed origin, Firefox/Safari, and human assessment of audible output still need environment-specific checks.
+
+## Try the music workflow locally
+
+1. Configure MongoDB, the session secret, exact app origin, and `JAMENDO_CLIENT_ID`; run `npm run dev`.
+2. Sign in and create a moodspace in Compose.
+3. In Discover, search `ambient` or a Jamendo artist/title. Inspect real artwork, duration, and source/license links.
+4. Play a result, queue another, and open Listen. Exercise pause/resume, seek, volume/mute, previous/next, and queue reordering/removal. Previous restarts a track after three seconds; otherwise it moves back.
+5. Navigate to Compose and back while listening; the active stream should continue without restarting.
+6. Choose Save to space on a search result and select your existing moodspace. Repeated saves add one reference only.
+7. Open that space, refresh, play or queue its saved music, and remove a track. Refresh again to verify removal.
+8. Refresh Listen: the queue is restored paused within this tab. Sign out: playback stops and that user's queue is cleared.
+
+Saved-track mutations increment the space revision, so an older open editor reports a conflict instead of overwriting newer state. Removing a saved track does not remove an independently queued copy. Queues and saved tracks are each capped at 50. No audio files or persistent stream URLs are stored.
+
+## Music source and licensing
+
+Jamendo is the only implemented provider. [Official track documentation](https://developer.jamendo.com/v3.0/tracks) defines the search/metadata and direct stream fields. The application queries its independent catalog; mainstream releases are not guaranteed. Metadata can be missing and streams can be withdrawn.
+
+This project is noncommercial. Artist name, Jamendo source link, and track license link appear in results, saved music, the queue, and Listen. Unknown licenses and NoDerivatives tracks are not eligible for playback in this implementation. Each recording's license still governs its reuse; no download, offline, remix, or synchronized-video feature is provided. [Jamendo API terms](https://devportal.jamendo.com/api_terms_of_use).
 
 ## Architecture and request flow
 
-- `client/src/`: React routes and components, shared UI primitives, Tailwind tokens/CSS, API wrapper, Zustand session/editor-status stores. Private draft content stays in the editor's memory.
+- `client/src/`: React routes and components, shared UI primitives, Tailwind tokens/CSS, API wrapper, Zustand session/editor/player stores. Private draft content stays in the editor's memory. One app-level `PlayerHost` owns the audio element and cleans up its handlers.
 - `server/src/`: routes → validation/security middleware → controllers → services → Mongoose models; configuration and startup are separate from app construction.
 - `shared/moods.js`: one canonical mood vocabulary for the frontend and backend.
 - `server/tests/`: real database HTTP tests and validation/configuration tests.
@@ -84,6 +123,10 @@ Current verification and exact limitations are recorded in [the milestone handof
 **Accounts:** request → JSON/origin/CSRF checks and auth throttling → auth controller → service hashes/verifies password → User and Mongo session store → safe user object, rotated CSRF token, and HttpOnly cookie. Sessions expire after at most seven days. No password/hash is returned.
 
 **Moodspaces:** request → session and owner authentication, CSRF for mutations, strict schema validation → space controller → service queries by both resource ID and session user → MongoDB atomic create/read/update/delete → safe space response. Updates and deletes match the expected revision. Another user's ID returns 404; a conflicting owned revision returns 409.
+
+**Music search/playback:** authenticated request → bounded input validation and per-user music limiter → music controller → provider-independent service → Jamendo adapter → normalized metadata/direct stream response. Audio goes from Jamendo to the browser, never through an audio proxy. Search queries, rather than private moodspace descriptions, go to Jamendo.
+
+**Saved music:** session/CSRF + validated space/provider IDs → controller → owned-space service → provider verification → `Track` metadata upsert + conditional `Moodspace.savedTracks` append → confirmation. Concurrent duplicate saves are idempotent. Removal uses an owner-scoped atomic pull. Saved-list reads return ordered references/metadata without stream URLs; Play resolves a fresh URL. Existing space edits cannot accept or replace saved-track fields.
 
 `GET /api/health` checks process liveness; `GET /api/ready` performs a bounded database ping. API responses are JSON, and private responses use `Cache-Control: no-store`. Database/session errors never become successful saves.
 

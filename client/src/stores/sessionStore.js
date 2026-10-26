@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { api, clearApiSession, onSessionExpired, setCsrfToken } from '../services/api.js';
+import { clearPlayerSession } from './playerStore.js';
 
 let bootstrapPromise;
 
-export const useSessionStore = create((set) => ({
+export const useSessionStore = create((set, get) => ({
   user: null,
   status: 'loading',
   error: '',
@@ -37,6 +38,7 @@ export const useSessionStore = create((set) => ({
     const { data: tokenData } = await api('/auth/csrf');
     setCsrfToken(tokenData.csrfToken);
     const { data } = await api(`/auth/${mode}`, { method: 'POST', body: values });
+    if (get().user && get().user.id !== data.user.id) clearPlayerSession(get().user.id);
     clearApiSession();
     setCsrfToken(data.csrfToken);
     set({ user: data.user, status: 'ready', expired: false, error: '' });
@@ -51,6 +53,7 @@ export const useSessionStore = create((set) => ({
       if (error.status !== 401) throw error;
     }
     clearApiSession();
+    clearPlayerSession(get().user?.id);
     set({ user: null, status: 'ready', expired: false });
   }
 }));

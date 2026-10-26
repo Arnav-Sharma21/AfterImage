@@ -10,7 +10,11 @@ const moodspaceSchema = new mongoose.Schema({
     required: true,
     validate: value => value.length >= 1 && value.length <= 5 && new Set(value).size === value.length
   },
-  revision: { type: Number, default: 0, min: 0, required: true }
+  revision: { type: Number, default: 0, min: 0, required: true },
+  savedTracks: { type: [new mongoose.Schema({
+    trackId: { type: String, ref: 'Track', required: true },
+    savedAt: { type: Date, required: true }
+  }, { _id: false })], default: [] }
 }, { timestamps: true, versionKey: false, autoCreate: false, autoIndex: false });
 
 moodspaceSchema.index({ ownerId: 1, updatedAt: -1, _id: -1 });

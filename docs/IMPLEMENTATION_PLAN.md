@@ -1,6 +1,6 @@
 # AFTERIMAGE — implementation plan and risk report
 
-**Status:** Plan committed; initial foundation/authentication/basic moodspace slice implemented following the user's implementation instruction. Remaining milestones are pending.
+**Status:** Initial account/moodspace slice and subsequent real-music slice implemented and verified locally. Remaining plan milestones are pending.
 
 **Prepared:** October 26, 2026, Asia/Kolkata.  
 **Deadline:** October 27, 2026, 23:59 IST (18:29 UTC).  
@@ -15,6 +15,14 @@ The initial planning task created this document only. The subsequent implementat
 The user explicitly limited the first implementation task to the runnable foundation, accounts, and title/description/mood-tag CRUD. This advances M2 and the basic persistence portion of M3. The provider spike in M1 is deferred by that instruction; perform it before starting recommendation or playback implementation. No provider integration, catalog verification, image blocks, quote blocks, energy/theme preferences, recommendations, favorites, or playback is claimed complete.
 
 Implemented: React/Vite/Tailwind shell, self-hosted typography, same-origin API communication, Express/Mongoose startup and database handling, Mongo-backed sessions, Argon2id, CSRF/origin protection, strict validation, owner-scoped CRUD, revision conflicts, form error/recovery states, unsaved-edit guards, and focused database/browser tests. Atlas and production verification await environment credentials and deployment authorization. See `docs/MILESTONE_1.md` for the verified handoff and `README.md` for setup. The original milestones and full workflow acceptance criteria below remain the target for subsequent work.
+
+### User milestone 2 — search, real playback, and saved music
+
+The user's next instruction authorizes the provider gate and literal music search, playback, queue controls, and saving/removing tracks inside owned moodspaces. This advances the playback/search portions of the original M5 independently of M4; mood-profile extraction, ranking, feedback learning, favorites, image blocks, and final cinematic composition remain out of scope for this slice.
+
+Jamendo client credentials were available locally. A real provider/browser feasibility probe succeeded before the full player was built. The implementation uses a provider adapter, one app-level HTMLAudioElement, Zustand queue state, direct authorized media URLs, and explicit source/license attribution. MongoDB stores canonical `Track` metadata and bounded references inside `Moodspace.savedTracks`, with no raw audio or persistent stream URLs. Saved-track deltas are idempotent, owner-scoped, and increment the space revision. The user-requested manual saved-track collection is distinct from the later generated/saved recommendation selection.
+
+Queues persist paused within the current tab session and are cleared on logout. Catalog/stream errors remain visible and recoverable. No automatic Audius fallback is enabled; Jamendo works with the supplied key. Missing keys give a configuration error. Real verification evidence and remaining environment checks belong in `docs/MILESTONE_2.md`; no production deployment is implied.
 
 ## 1. Product identity and boundaries
 

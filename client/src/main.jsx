@@ -9,6 +9,7 @@ import { AuthPage } from './features/auth/AuthPage.jsx';
 import { DiscoverPage } from './features/discover/DiscoverPage.jsx';
 import { ComposePage } from './features/moodspaces/ComposePage.jsx';
 import { SpacePage } from './features/moodspaces/SpacePage.jsx';
+import { ListenPage } from './features/player/ListenPage.jsx';
 import './styles/app.css';
 
 const router = createBrowserRouter([{ element: <App />, errorElement: <div className="page-shell"><h1>Something interrupted this space.</h1><p>Please reload the page and try again.</p><a href="/">Return home</a></div>, children: [
@@ -17,6 +18,7 @@ const router = createBrowserRouter([{ element: <App />, errorElement: <div class
   { path: '/about', element: <AboutPage /> },
   { element: <RequireAuth />, children: [
     { path: '/discover', element: <DiscoverPage /> },
+    { path: '/listen', element: <ListenPage /> },
     { path: '/compose', element: <Navigate to="/compose/new" replace /> },
     { path: '/compose/new', element: <ComposePage /> },
     { path: '/compose/:id', element: <ComposePage /> },

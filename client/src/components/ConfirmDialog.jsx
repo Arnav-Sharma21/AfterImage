@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Button } from './Button.jsx';
 
-export function ConfirmDialog({ title, children, confirmLabel, busy = false, error, onConfirm, onCancel, destructive = false }) {
+export function ConfirmDialog({ title, children, confirmLabel, busy = false, confirmDisabled = false, error, onConfirm, onCancel, destructive = false }) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     const dialog = ref.current;
@@ -24,7 +24,7 @@ export function ConfirmDialog({ title, children, confirmLabel, busy = false, err
     {error ? <p className="field-error" role="alert">{error}</p> : null}
     <div className="dialog-actions">
       <Button variant="secondary" onClick={cancel} disabled={busy} autoFocus>Cancel</Button>
-      <Button variant={destructive ? 'danger' : 'primary'} disabled={busy} onClick={onConfirm}>{busy ? 'Please wait…' : confirmLabel}</Button>
+      <Button variant={destructive ? 'danger' : 'primary'} disabled={busy || confirmDisabled} onClick={onConfirm}>{busy ? 'Please wait…' : confirmLabel}</Button>
     </div>
   </dialog>;
 }

@@ -208,3 +208,61 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Music stays inside the existing editorial shell. */
+select { width: 100%; margin-top: 10px; padding: 12px; color: var(--color-bone); background: var(--color-charcoal); border: 1px solid #827a74; border-radius: 3px; font: inherit; }
+.space-select-label { display: block; margin-top: 24px; }
+.music-search { margin-bottom: 64px; }
+.music-search-form { display: flex; align-items: end; gap: 16px; margin: 28px 0; }
+.music-search-form > label { flex: 1; max-width: 640px; display: flex; flex-direction: column; gap: 10px; font-weight: 600; }
+.search-hint { color: var(--color-muted); max-width: 65ch; }
+.track-list { list-style: none; padding: 0; margin: 24px 0 0; }
+.track-row { display: flex; gap: 20px; align-items: center; padding: 24px 0; border-bottom: 1px solid #363235; }
+.track-art { width: 72px; height: 72px; flex-shrink: 0; object-fit: cover; background: var(--color-oxblood); }
+.track-art--empty { background: var(--color-charcoal); }
+.track-info { flex: 1; min-width: 0; }
+.track-info h3 { font-size: 20px; overflow-wrap: anywhere; }
+.track-info > p { color: var(--color-muted); font-size: 15px; overflow-wrap: anywhere; }
+.track-attribution { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--color-muted); font-size: 13px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.track-attribution a { text-decoration: underline; }
+.track-attribution a:hover { color: var(--color-focus); }
+.track-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.saved-tracks { margin-top: 64px; padding-top: 32px; border-top: 1px solid #62595b; }
+.saved-tracks > .fine-print { margin-top: 16px; }
+.player-summary { display: flex; gap: 12px; align-items: center; max-width: 220px; min-width: 0; }
+.player-summary > a { text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-size: 14px; text-decoration: underline; }
+.player-summary .button { font-size: 14px; flex-shrink: 0; }
+.listen-page .section-heading { align-items: end; }
+.listen-page h1 { font-size: clamp(44px, 6vw, 80px); }
+.listening-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 1fr); gap: 64px; padding: 56px 0; }
+.listening-stage h2 { font-size: clamp(40px, 5vw, 64px); }
+.listening-stage > div > p { margin-top: 16px; font-size: 22px; color: var(--color-muted); }
+.transport { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.seek-control { display: flex; flex-direction: column; gap: 12px; margin-top: 28px; font-size: 14px; color: var(--color-muted); }
+input[type="range"] { padding: 0; height: 28px; border: 0; accent-color: var(--color-crimson); cursor: pointer; }
+.time-display { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; color: var(--color-muted); font-size: 13px; }
+.volume-control { display: flex; align-items: center; gap: 24px; margin-top: 16px; }
+.volume-control > label { display: flex; align-items: center; gap: 16px; flex: 1; font-size: 14px; }
+.volume-control input { max-width: 200px; }
+.playback-status { margin-top: 12px; color: var(--color-muted); font-size: 14px; min-height: 22px; }
+.queue-section { border-top: 1px solid #62595b; padding-top: 32px; }
+.queue-section > .fine-print { margin-top: 16px; }
+.queue-list { padding-left: 24px; margin-top: 24px; }
+.queue-list > li { padding: 20px 12px; border-bottom: 1px solid #363235; }
+.queue-list > li[aria-current="true"] { background: #21161b; }
+.queue-list h3 { font-size: 20px; }
+.queue-list p { color: var(--color-muted); }
+.queue-actions { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 12px; }
+@media (max-width: 1100px) { .track-row { flex-wrap: wrap; } .track-actions { margin-left: 92px; } .player-summary { max-width: 180px; } }
+@media (max-width: 760px) {
+  .music-search-form { flex-direction: column; align-items: stretch; }
+  .music-search-form > label { max-width: none; }
+  .track-row { gap: 16px; align-items: start; }
+  .track-art { width: 56px; height: 56px; }
+  .track-actions { margin-left: 0; width: 100%; gap: 16px; }
+  .player-summary { max-width: 100%; order: 4; width: 100%; }
+  .listening-stage { grid-template-columns: 1fr; padding-top: 36px; gap: 36px; }
+  .transport { justify-content: start; gap: 12px; }
+  .queue-actions { gap: 20px; }
+}
+.player-notice { padding: 14px var(--spacing-page); border-bottom: 1px solid #363235; color: var(--color-muted); font-size: 14px; }
