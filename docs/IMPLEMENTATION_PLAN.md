@@ -1,6 +1,6 @@
 # AFTERIMAGE — implementation plan and risk report
 
-**Status:** Initial account/moodspace slice and subsequent real-music slice implemented and verified locally. Remaining plan milestones are pending.
+**Status:** Account/moodspace, real-music, and mood-intelligence slices implemented locally. Current verification and remaining limits are recorded in the milestone handoffs.
 
 **Prepared:** October 26, 2026, Asia/Kolkata.  
 **Deadline:** October 27, 2026, 23:59 IST (18:29 UTC).  
@@ -23,6 +23,12 @@ The user's next instruction authorizes the provider gate and literal music searc
 Jamendo client credentials were available locally. A real provider/browser feasibility probe succeeded before the full player was built. The implementation uses a provider adapter, one app-level HTMLAudioElement, Zustand queue state, direct authorized media URLs, and explicit source/license attribution. MongoDB stores canonical `Track` metadata and bounded references inside `Moodspace.savedTracks`, with no raw audio or persistent stream URLs. Saved-track deltas are idempotent, owner-scoped, and increment the space revision. The user-requested manual saved-track collection is distinct from the later generated/saved recommendation selection.
 
 Queues persist paused within the current tab session and are cleared on logout. Catalog/stream errors remain visible and recoverable. No automatic Audius fallback is enabled; Jamendo works with the supplied key. Missing keys give a configuration error. Real verification evidence and remaining environment checks belong in `docs/MILESTONE_2.md`; no production deployment is implied.
+
+### User milestone 3 — mood-to-music intelligence
+
+Implemented deterministic profiles and recommendation ranking, real Jamendo candidate retrieval, persisted bounded selections, and authenticated private like/dislike feedback. Optional quote/note/manual image-caption fragments are now editable and persistent. Discover, Compose, and saved-space views share the recommendation panel. Exact dislikes are excluded across the user's spaces; recent tag affinities, saved music, and repeat penalties influence later rankings.
+
+The detailed formula now includes five feature dimensions, genre compatibility, preference affinity, metadata coverage, and repetition penalties to satisfy the user's approved Milestone 3 scope. It replaces the initial section 12 scoring sketch for the implemented version; see `docs/MILESTONE_3.md` for the authoritative formula, source weights, tests, and limitations. No raw image analysis, paid AI, full image editor, humming, lyrics, redesign, or deployment was added. Manual saved tracks remain separate from generated recommendation snapshots.
 
 ## 1. Product identity and boundaries
 

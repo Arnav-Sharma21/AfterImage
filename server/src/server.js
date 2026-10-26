@@ -7,14 +7,16 @@ import { readConfig } from './config/env.js';
 import { User } from './models/User.js';
 import { Moodspace } from './models/Moodspace.js';
 import { Track } from './models/Track.js';
+import { UserFeedback } from './models/UserFeedback.js';
 
 dotenv.config({ path: new URL('../.env', import.meta.url), quiet: true });
 
 async function start() {
   const config = readConfig();
   await connectDatabase(config.mongoUri);
-  await Promise.all([User.createCollection(), Moodspace.createCollection(), Track.createCollection()]);
-  await Promise.all([User.createIndexes(), Moodspace.createIndexes(), Track.createIndexes()]);
+  const models = [User, Moodspace, Track, UserFeedback];
+  await Promise.all(models.map(model => model.createCollection()));
+  await Promise.all(models.map(model => model.createIndexes()));
   const store = MongoStore.create({ client: mongoose.connection.getClient(), dbName: mongoose.connection.name, collectionName: 'sessions' });
   store.on('error', () => console.error('Session storage is unavailable.'));
   const app = createApp(config, store);

@@ -11,6 +11,18 @@ const moodspaceSchema = new mongoose.Schema({
     validate: value => value.length >= 1 && value.length <= 5 && new Set(value).size === value.length
   },
   revision: { type: Number, default: 0, min: 0, required: true },
+  fragments: { type: [new mongoose.Schema({
+    id: { type: String, required: true },
+    type: { type: String, enum: ['quote', 'note', 'image-caption'], required: true },
+    text: { type: String, required: true, maxlength: 1000 }
+  }, { _id: false })], default: [] },
+  recommendation: { type: new mongoose.Schema({
+    generation: Number, contentRevision: Number, preferenceRevision: Number,
+    algorithmVersion: String, generatedAt: Date,
+    profile: mongoose.Schema.Types.Mixed,
+    warnings: [String],
+    tracks: [new mongoose.Schema({ trackId: String, score: Number, reasons: [String], evidence: mongoose.Schema.Types.Mixed }, { _id: false })]
+  }, { _id: false }), default: null },
   savedTracks: { type: [new mongoose.Schema({
     trackId: { type: String, ref: 'Track', required: true },
     savedAt: { type: Date, required: true }

@@ -6,7 +6,9 @@ An original music-first application that maps personal visual moodspaces to musi
 
 The first working slice includes email/password accounts, MongoDB-backed sessions, and private moodspaces with a title, description, and 1–5 mood tags. Create, retrieve, edit, and delete spaces through the React UI. Edits use revisions to prevent stale tabs from overwriting newer changes. Failed saves retain the draft; session expiry offers reauthentication.
 
-Milestone 2 adds real Jamendo search, artwork/metadata, direct audio playback, a shared queue, and saved tracks inside owned moodspaces. Playback continues across Discover, Compose, and Listen. Play/pause, previous/next, seeking, volume/mute, buffering, retries, and track-ended advance use one real HTML audio element. Recommendations, image/quote blocks, and advanced effects remain future milestones.
+Milestone 2 adds real Jamendo search, artwork/metadata, direct audio playback, a shared queue, and saved tracks inside owned moodspaces. Playback continues across Discover, Compose, and Listen. Play/pause, previous/next, seeking, volume/mute, buffering, retries, and track-ended advance use one real HTML audio element.
+
+Milestone 3 adds **Find my sound**: deterministic mood profiles, real-catalog candidate ranking, truthful explanations, and persistent likes/dislikes. Mood tags, recognized words, optional quote/note/manual-caption fragments, saved music, and recent likes influence the selection. No raw image analysis or AI service is used. Image uploads and advanced visual effects remain future work.
 
 ## Local setup
 
@@ -91,7 +93,19 @@ MUSIC_VERIFY_FULL_TRACK=1 CHROMIUM_PATH=/usr/bin/chromium node server/scripts/ve
 
 Run live probes sequentially. Jamendo has returned intermittent empty responses during verification. The adapter retries an empty/transient response once within one eight-second deadline; final empty/error responses remain visible. Stream URLs rotate, so tracks are identified by provider/ID and resolved again for playback.
 
-See [Milestone 1](docs/MILESTONE_1.md) and [Milestone 2 verification](docs/MILESTONE_2.md) for actual results and limitations. Real hosting, HTTPS cookies/media policy on the deployed origin, Firefox/Safari, and human assessment of audible output still need environment-specific checks.
+See [Milestone 1](docs/MILESTONE_1.md), [Milestone 2 verification](docs/MILESTONE_2.md), and [Milestone 3 formula/verification](docs/MILESTONE_3.md) for actual results and limitations. Real hosting, HTTPS cookies/media policy on the deployed origin, Firefox/Safari, and human assessment of audible output still need environment-specific checks.
+
+## Try mood-driven recommendations
+
+1. Save a space with moods and descriptive words. Optionally use **Add text fragment** in Compose for a quote, personal thought, or manually written image caption.
+2. Choose **Find my sound** in the saved editor/space. In Discover, use the same action beside a personal space.
+3. Inspect **Your music direction** and each track's explanation; play, queue, or save results to the current space.
+4. Like a track or choose **Less like this**, then **Refresh my sound**. Your feedback persists across refresh/login and affects your own spaces; exact dislikes are excluded.
+5. Compare Quiet/rainy and Intense/energetic spaces. Their query tags, estimated features, and rankings should differ. A refresh may still repeat good matches when the catalog is small.
+
+The pure extraction/ranking code is separate from controllers and provider code. The documented formula combines mood overlap (.45), feature similarity (.20), genre compatibility (.20), and preference (.15), with missing-evidence coverage and saved/recent repetition penalties. See `docs/MILESTONE_3.md` for the full definitions and limits. Only derived catalog tags go to Jamendo; private text is not sent upstream.
+
+The live preflight `node server/scripts/verify-recommendations.js` compares actual Jamendo results for three explicit verification profiles. The opt-in browser suite includes recommendation persistence, playback/saving, feedback, dislike exclusion, and Discover integration. Synthetic unit/HTTP fixtures remain test-only.
 
 ## Try the music workflow locally
 
@@ -127,6 +141,10 @@ This project is noncommercial. Artist name, Jamendo source link, and track licen
 **Music search/playback:** authenticated request → bounded input validation and per-user music limiter → music controller → provider-independent service → Jamendo adapter → normalized metadata/direct stream response. Audio goes from Jamendo to the browser, never through an audio proxy. Search queries, rather than private moodspace descriptions, go to Jamendo.
 
 **Saved music:** session/CSRF + validated space/provider IDs → controller → owned-space service → provider verification → `Track` metadata upsert + conditional `Moodspace.savedTracks` append → confirmation. Concurrent duplicate saves are idempotent. Removal uses an owner-scoped atomic pull. Saved-list reads return ordered references/metadata without stream URLs; Play resolves a fresh URL. Existing space edits cannot accept or replace saved-track fields.
+
+For a just-generated recommendation, saving can use server-verified metadata up to five minutes old without refreshing its timestamp; this tolerates a transient second lookup failure. Audio playback still resolves a fresh eligible stream.
+
+**Recommendations:** owned saved space + recent private reactions and saved metadata → deterministic profile → real provider candidates → separate pure ranker → bounded revision-checked snapshot → current feedback-filtered response. Feedback stores one reaction per user/track; generation never trusts a client-supplied profile or fabricated song metadata.
 
 `GET /api/health` checks process liveness; `GET /api/ready` performs a bounded database ping. API responses are JSON, and private responses use `Cache-Control: no-store`. Database/session errors never become successful saves.
 

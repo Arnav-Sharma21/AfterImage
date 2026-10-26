@@ -20,14 +20,14 @@ export function clearApiSession() {
   pendingRequests.clear();
 }
 
-export async function api(path, { method = 'GET', body, signal } = {}) {
+export async function api(path, { method = 'GET', body, signal, timeoutMs = 12000 } = {}) {
   const controller = new AbortController();
   const cancel = () => controller.abort();
   if (signal?.aborted) controller.abort();
   signal?.addEventListener('abort', cancel, { once: true });
   pendingRequests.add(controller);
   let timedOut = false;
-  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 12000);
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   try {
     const response = await fetch(`/api${path}`, {
       method, credentials: 'same-origin', signal: controller.signal,

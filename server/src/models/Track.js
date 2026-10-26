@@ -10,6 +10,7 @@ const trackSchema = new mongoose.Schema({
   artworkUrl: { type: String, default: null },
   durationSeconds: { type: Number, default: null },
   genres: [String], tags: [String],
+  musicFeatures: { energy: { type: Number, min: 0, max: 1, default: null }, vocal: { type: String, enum: ['vocal', 'instrumental', null], default: null } },
   licenseUrl: { type: String, default: null },
   sourceUrl: { type: String, required: true },
   isPlayable: { type: Boolean, default: false },
@@ -25,6 +26,15 @@ export function serializeTrack(track) {
     title: track.title, artistName: track.artistName, albumName: track.albumName,
     artworkUrl: track.artworkUrl, streamUrl: null, durationSeconds: track.durationSeconds,
     genres: track.genres, tags: track.tags, licenseUrl: track.licenseUrl,
-    sourceUrl: track.sourceUrl, isPlayable: track.isPlayable
+    sourceUrl: track.sourceUrl, isPlayable: track.isPlayable,
+    musicFeatures: track.musicFeatures || { energy: null, vocal: null }
   };
+}
+
+export async function cacheTrackMetadata(tracks) {
+  if (!tracks.length) return;
+  await Track.bulkWrite(tracks.map(track => {
+    const { id, streamUrl: _streamUrl, ...metadata } = track;
+    return { updateOne: { filter: { _id: id }, update: { $set: { ...metadata, verifiedAt: new Date() } }, upsert: true } };
+  }));
 }

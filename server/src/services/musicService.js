@@ -3,6 +3,7 @@ import { AppError } from '../middleware/errors.js';
 export function createMusicService(provider) {
   return {
     search: query => provider.search(query),
+    getCandidates: query => provider.getCandidates(query),
     async getTrack(providerName, id) {
       if (providerName !== provider.name) throw new AppError(422, 'PROVIDER_UNSUPPORTED', 'This music provider is not supported.');
       return provider.getTrack(id);

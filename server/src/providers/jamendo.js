@@ -38,17 +38,22 @@ export function normalizeJamendoTrack(raw, clientId = '') {
     tags: cleanTags([...(Array.isArray(metadataTags?.vartags) ? metadataTags.vartags : []), ...(Array.isArray(metadataTags?.instruments) ? metadataTags.instruments : [])]),
     licenseUrl,
     sourceUrl: `https://www.jamendo.com/track/${raw.id}`,
-    isPlayable: Boolean(licenseUrl && safeStream)
+    isPlayable: Boolean(licenseUrl && safeStream),
+    musicFeatures: {
+      energy: ({ verylow: .1, low: .3, medium: .5, high: .7, veryhigh: .9 })[raw.musicinfo?.speed] ?? null,
+      vocal: ['vocal', 'instrumental'].includes(raw.musicinfo?.vocalinstrumental) ? raw.musicinfo.vocalinstrumental : null
+    }
   };
 }
 
 export function createJamendoProvider({ clientId, fetchImpl = fetch, timeoutMs = 8000 } = {}) {
-  async function request(parameters) {
+  async function request(parameters, externalSignal, deadlineMs = timeoutMs) {
     if (!clientId) throw new AppError(503, 'MUSIC_NOT_CONFIGURED', 'Music search is not configured. Set JAMENDO_CLIENT_ID in server/.env and restart the backend.');
     const url = new URL('https://api.jamendo.com/v3.0/tracks/');
-    url.search = new URLSearchParams({ client_id: clientId, format: 'json', audioformat: 'mp31', include: 'musicinfo', ...(parameters.id ? {} : { ccnd: 'false' }), ...parameters });
+    url.search = new URLSearchParams({ client_id: clientId, format: 'json', audioformat: 'mp31', include: 'musicinfo', type: 'single albumtrack', ...(parameters.id ? {} : { ccnd: 'false' }), ...parameters });
     try {
-      const signal = AbortSignal.timeout(timeoutMs);
+      const timeout = AbortSignal.timeout(deadlineMs);
+      const signal = externalSignal ? AbortSignal.any([timeout, externalSignal]) : timeout;
       // Both attempts share one deadline. Empty live responses have occurred for
       // known track IDs; recheck once before treating them as removed.
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -81,6 +86,9 @@ export function createJamendoProvider({ clientId, fetchImpl = fetch, timeoutMs =
     async search({ q, page, limit }) {
       const tracks = await request({ search: q, offset: String((page - 1) * limit), limit: String(limit), order: 'relevance' });
       return { tracks, hasMore: tracks.length === limit };
+    },
+    async getCandidates({ tags, speed, offset, limit, signal }) {
+      return request({ fuzzytags: tags.join('+'), ...(speed.length ? { speed: speed.join('+') } : {}), offset: String(offset), limit: String(limit), order: 'relevance' }, signal, 5000);
     },
     async getTrack(id) {
       const tracks = await request({ id, limit: '1' });

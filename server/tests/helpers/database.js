@@ -6,6 +6,7 @@ import { connectDatabase } from '../../src/config/database.js';
 import { User } from '../../src/models/User.js';
 import { Moodspace } from '../../src/models/Moodspace.js';
 import { Track } from '../../src/models/Track.js';
+import { UserFeedback } from '../../src/models/UserFeedback.js';
 
 export async function testDatabase() {
   // This starts a genuine MongoDB daemon, not a mocked Mongoose implementation.
@@ -22,8 +23,9 @@ export async function testDatabase() {
   }
   try {
     await connectDatabase(uri, { dbName });
-    await Promise.all([User.createCollection(), Moodspace.createCollection(), Track.createCollection()]);
-    await Promise.all([User.createIndexes(), Moodspace.createIndexes(), Track.createIndexes()]);
+    const models = [User, Moodspace, Track, UserFeedback];
+    await Promise.all(models.map(model => model.createCollection()));
+    await Promise.all(models.map(model => model.createIndexes()));
     const store = MongoStore.create({ client: mongoose.connection.getClient(), dbName: mongoose.connection.name, collectionName: 'sessions' });
     return {
       store,

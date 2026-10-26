@@ -10,11 +10,13 @@ import { useEditorStore } from '../../stores/editorStore.js';
 import { AuthForm } from '../auth/AuthForm.jsx';
 import { MoodPicker } from './MoodPicker.jsx';
 import { useSpace } from './useSpace.js';
+import { FragmentEditor } from './FragmentEditor.jsx';
+import { RecommendationPanel } from '../recommendations/RecommendationPanel.jsx';
 
-const EMPTY_SPACE = { title: '', description: '', moods: [] };
+const EMPTY_SPACE = { title: '', description: '', moods: [], fragments: [] };
 
 function SpaceEditor({ initialSpace }) {
-  const [draft, setDraft] = useState(() => ({ title: initialSpace.title, description: initialSpace.description, moods: initialSpace.moods }));
+  const [draft, setDraft] = useState(() => ({ title: initialSpace.title, description: initialSpace.description, moods: initialSpace.moods, fragments: initialSpace.fragments || [] }));
   const [saved, setSaved] = useState(initialSpace);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +25,7 @@ function SpaceEditor({ initialSpace }) {
   const [conflict, setConflict] = useState(false);
   const navigate = useNavigate();
   const formRef = useRef(null);
-  const dirty = draft.title !== saved.title || draft.description !== saved.description || draft.moods.join('|') !== saved.moods.join('|');
+  const dirty = draft.title !== saved.title || draft.description !== saved.description || draft.moods.join('|') !== saved.moods.join('|') || JSON.stringify(draft.fragments) !== JSON.stringify(saved.fragments || []);
   const blocker = useBlocker(dirty && !busy);
   const expired = useSessionStore(state => state.expired);
   useLayoutEffect(() => {
@@ -50,7 +52,7 @@ function SpaceEditor({ initialSpace }) {
         method: saved.id ? 'PATCH' : 'POST', body: { ...draft, ...(saved.id ? { revision: saved.revision } : {}) }
       });
       setSaved(data);
-      setDraft({ title: data.title, description: data.description, moods: data.moods });
+      setDraft({ title: data.title, description: data.description, moods: data.moods, fragments: data.fragments || [] });
       setNotice('Saved to your private library.');
       if (!saved.id) navigate(`/compose/${data.id}`, { replace: true });
     } catch (failure) {
@@ -74,11 +76,12 @@ function SpaceEditor({ initialSpace }) {
           <textarea id="description" name="description" placeholder="Put the atmosphere into words." value={draft.description} onChange={event => change('description', event.target.value)} rows={7} maxLength={1000} disabled={busy} aria-invalid={Boolean(fieldErrors.description)} aria-describedby={`description-hint${fieldErrors.description ? ' description-error' : ''}`} />
         </Field>
         <p className="character-count">{draft.description.length} / 1,000</p>
+        <FragmentEditor fragments={draft.fragments} onChange={value => change('fragments', value)} disabled={busy} error={fieldErrors.fragments} />
       </div>
       <aside className="compose-inspector" aria-label="Space atmosphere">
         <MoodPicker value={draft.moods} onChange={value => change('moods', value)} error={fieldErrors.moods} disabled={busy} />
         <div className="space-preview" aria-hidden="true"><span>{draft.title || 'Your space, taking shape.'}</span><p>{draft.moods.length ? draft.moods.join(' / ') : 'A mood is a beginning.'}</p></div>
-        <p className="fine-print">Only you can see this space. Images, quotes, and music will follow in later chapters.</p>
+        <p className="fine-print">Only you can see this space. Mood tags, matched words, and saved songs guide its music.</p>
       </aside>
       <div className="compose-actions">
         <div><ErrorMessage message={error} />{notice ? <p className="success-message" role="status">{notice}</p> : null}</div>
@@ -86,6 +89,7 @@ function SpaceEditor({ initialSpace }) {
         {conflict ? <Link className="text-link" to={`/spaces/${saved.id}`}>Open the current saved version</Link> : null}
       </div>
     </form>
+    {saved.id ? <RecommendationPanel spaceId={saved.id} revision={saved.revision} disabled={dirty || busy || expired} onSpaceChanged={async () => { const { data } = await api(`/spaces/${saved.id}`); setSaved(data); }} /> : <p className="fine-print recommendation-intro">Save this space to find music from its moods and words.</p>}
     {blocker.state === 'blocked' ? <ConfirmDialog title="Leave your changes behind?" confirmLabel="Discard and leave" onCancel={() => blocker.reset()} onConfirm={() => blocker.proceed()}><p>Your latest edits have not been saved. Stay here to keep working, or discard them.</p></ConfirmDialog> : null}
     {expired ? <section className="reauth-panel" aria-labelledby="reauth-title"><h2 id="reauth-title">Your session has expired.</h2><AuthForm reauthenticate onSuccess={() => setError('You are signed in again. Save your space when ready.')} /></section> : null}
   </>;
