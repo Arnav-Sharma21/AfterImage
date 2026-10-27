@@ -42,3 +42,18 @@ Thumbs.db
 
 # Design references, inspiration & verification (third-party visual material; local-only)
 /design/
+
+# Local AI development tools
+/.agents/
+/skills-lock.json
+/AGENTS.md
+
+# Historical development documentation
+/docs/IMPLEMENTATION_PLAN.md
+/docs/PRE_DEPLOYMENT_AUDIT.md
+/docs/GITHUB_RELEASE_AUDIT.md
+/docs/SUBMISSION_CHECKLIST.md
+/docs/LOCAL_CONFIGURATION.md
+/docs/CREATIVE_REBUILD_REPORT.md
+/docs/NEON_PINK_UPDATE.md
+/docs/MILESTONE_*.md
