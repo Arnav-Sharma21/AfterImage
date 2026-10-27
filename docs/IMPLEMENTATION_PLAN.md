@@ -1,3 +1,5 @@
+> Current visual authority: the definitive user instructions and `docs/EXPERIENCE_SPEC.md`. Historical screen names, fixed palettes and layout proposals below are superseded. Functional/security/recommendation contracts remain applicable. Cloudinary media imports are documented in `docs/CREATIVE_REBUILD_REPORT.md`.
+
 # AFTERIMAGE — implementation plan and risk report
 
 **Status:** Account/moodspace, real-music, and mood-intelligence slices implemented locally. Current verification and remaining limits are recorded in the milestone handoffs.

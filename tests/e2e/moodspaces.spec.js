@@ -12,8 +12,8 @@ test('account → persisted moodspace → edit → re-login → delete', async (
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create your account' }).click();
-  await expect(page.getByRole('heading', { name: 'Your spaces' })).toBeVisible();
-  await page.getByRole('link', { name: 'Compose your first space' }).click();
+  await expect(page.getByRole('heading', { name: 'Personal archive' })).toBeVisible();
+  await page.getByRole('link', { name: 'Create your first world' }).click();
   await page.getByRole('tab', { name: 'Story', exact: true }).click();
   await page.getByLabel('Space title').fill('After the rain');
   await page.getByRole('tab', { name: 'Story', exact: true }).click();
@@ -24,7 +24,7 @@ test('account → persisted moodspace → edit → re-login → delete', async (
   await page.getByRole('button', { name: 'Dreamlike', exact: true }).click();
   await page.getByRole('button', { name: 'Save space', exact: true }).click();
   await expect(page.getByText('All changes saved')).toBeVisible();
-  await expect(page).toHaveURL(/\/compose\/[a-f0-9]{24}$/);
+  await expect(page).toHaveURL(/\/worlds\/[a-f0-9]{24}\/edit$/);
   await page.reload();
   await page.getByRole('tab', { name: 'Story', exact: true }).click();
   await expect(page.getByLabel('Space title')).toHaveValue('After the rain');
@@ -33,7 +33,7 @@ test('account → persisted moodspace → edit → re-login → delete', async (
   await page.screenshot({ animations: 'disabled', path: testInfo.outputPath('compose.png'), fullPage: true });
   await page.getByRole('tab', { name: 'Story', exact: true }).click();
   await page.getByLabel('Space title').fill('Unsaved thought');
-  await page.getByRole('link', { name: 'Discover', exact: true }).click();
+  await page.getByRole('link', { name: 'Worlds', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -45,7 +45,7 @@ test('account → persisted moodspace → edit → re-login → delete', async (
   await expect(page.getByLabel('Space title')).toHaveValue('Before the dawn');
   await page.getByRole('button', { name: 'Save space', exact: true }).click();
   await expect(page.getByText('Saved to your private library.')).toBeVisible();
-  await page.getByRole('link', { name: 'Discover', exact: true }).click();
+  await page.getByRole('link', { name: 'Worlds', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Before the dawn' })).toBeVisible();
   await page.screenshot({ animations: 'disabled', path: testInfo.outputPath('discover.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

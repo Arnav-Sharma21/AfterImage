@@ -1,3 +1,4 @@
+import { withImageClaims } from '../media/mediaService.js';
 import { Moodspace } from '../models/Moodspace.js';
 import { AppError } from '../middleware/errors.js';
 
@@ -22,7 +23,7 @@ export async function getSpace(ownerId, id) {
 }
 
 export async function createSpace(ownerId, fields) {
-  return serializeSpace(await Moodspace.create({ ...fields, ownerId }));
+  return withImageClaims(ownerId, fields.images, async images => serializeSpace(await Moodspace.create({ ...fields, ...(images ? { images } : {}), ownerId })));
 }
 
 async function throwMissingOrConflict(ownerId, id) {
@@ -31,17 +32,23 @@ async function throwMissingOrConflict(ownerId, id) {
   throw new AppError(409, 'REVISION_CONFLICT', 'This space changed in another tab. Reload the saved version before trying again.');
 }
 
-export async function updateSpace(ownerId, id, { revision, ...fields }) {
-  const space = await Moodspace.findOneAndUpdate(
-    { _id: id, ownerId, revision },
-    { $set: fields, $inc: { revision: 1 } },
-    { returnDocument: 'after', runValidators: true }
-  ).lean();
-  if (!space) await throwMissingOrConflict(ownerId, id);
-  return serializeSpace(space);
+export async function updateSpace(ownerId, id, { revision, ...fields }, media) {
+  const before = await getSpace(ownerId, id);
+  const result = await withImageClaims(ownerId, fields.images, async images => {
+    const space = await Moodspace.findOneAndUpdate(
+      { _id: id, ownerId, revision },
+      { $set: { ...fields, ...(images ? { images } : {}) }, $inc: { revision: 1 } },
+      { returnDocument: 'after', runValidators: true }
+    ).lean();
+    if (!space) await throwMissingOrConflict(ownerId, id);
+    return serializeSpace(space);
+  });
+  if (fields.images && media) setImmediate(() => { void media.cleanupRemoved(ownerId, before.images, result.images).catch(() => {}); });
+  return result;
 }
 
-export async function deleteSpace(ownerId, id, revision) {
+export async function deleteSpace(ownerId, id, revision, media) {
   const space = await Moodspace.findOneAndDelete({ _id: id, ownerId, revision });
   if (!space) await throwMissingOrConflict(ownerId, id);
+  if (media) setImmediate(() => { void media.cleanupRemoved(ownerId, space.images || []).catch(() => {}); });
 }

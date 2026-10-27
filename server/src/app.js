@@ -1,3 +1,6 @@
+import { mediaRoutes } from './routes/mediaRoutes.js';
+import { createCloudinaryProvider } from './media/cloudinaryProvider.js';
+import { createMediaService } from './media/mediaService.js';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -18,12 +21,13 @@ import { createMusicService } from './services/musicService.js';
 
 const buildDirectory = fileURLToPath(new URL('../../client/dist/', import.meta.url));
 
-export function createApp(config, sessionStore, { musicProvider } = {}) {
+export function createApp(config, sessionStore, { musicProvider, mediaProvider } = {}) {
   if (!sessionStore) throw new Error('A persistent session store is required.');
   const app = express();
   const isProduction = config.nodeEnv === 'production';
   app.locals.isProduction = isProduction;
   app.locals.music = createMusicService(musicProvider || createJamendoProvider({ clientId: config.jamendoClientId }));
+  app.locals.media = createMediaService(mediaProvider || createCloudinaryProvider(config.cloudinary));
   app.disable('x-powered-by');
   if (config.trustProxyHops) app.set('trust proxy', config.trustProxyHops);
   app.use((req, res, next) => {
@@ -36,7 +40,7 @@ export function createApp(config, sessionStore, { musicProvider } = {}) {
       'upgrade-insecure-requests': isProduction ? [] : null,
       'media-src': ["'self'", ...JAMENDO_MEDIA_ORIGINS],
       // User-provided HTTPS images load directly. No server-side URL fetching.
-      'img-src': ["'self'", 'data:', 'https:', ...JAMENDO_IMAGE_ORIGINS],
+      'img-src': ["'self'", 'data:', 'blob:', 'https:', ...JAMENDO_IMAGE_ORIGINS],
       'object-src': ["'none'"]
     } },
     strictTransportSecurity: isProduction ? undefined : false
@@ -61,6 +65,7 @@ export function createApp(config, sessionStore, { musicProvider } = {}) {
   app.use('/api/auth', authRoutes(config.authLimit));
   app.use('/api/spaces', spaceRoutes);
   app.use('/api/music', musicRoutes());
+  app.use('/api/media', mediaRoutes);
   app.use('/api', notFound);
 
   if (existsSync(path.join(buildDirectory, 'index.html'))) {

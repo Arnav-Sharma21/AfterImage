@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 
 test('real Jamendo search, audio controls, queue, route continuity and saved music', async ({ page }, testInfo) => {
   test.skip(process.env.RUN_LIVE_MUSIC_TESTS !== '1', 'Opt-in test requires real Jamendo credentials and external audio access.');
-  test.setTimeout(120000);
+  test.setTimeout(150000);
+  page.setDefaultTimeout(15000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const token = (await (await page.request.get('/api/auth/csrf')).json()).data.csrfToken;
@@ -12,14 +13,16 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   const created = await page.request.post('/api/spaces', { headers: { Origin: 'http://127.0.0.1:4173', 'X-CSRF-Token': csrf }, data: { title: 'Live music space', moods: ['Quiet'] } });
   expect(created.status()).toBe(201);
   const spaceId = (await created.json()).data.id;
-  await page.goto('/discover');
+  await page.goto('/signals');
   await page.getByLabel('Search by song title or artist').fill('ambient');
   await page.getByRole('button', { name: 'Search music', exact: true }).click();
   const rows = page.getByRole('list', { name: 'Music search results' }).locator('li');
   await expect(rows.first()).toBeVisible({ timeout: 15000 });
   expect(await rows.count()).toBeGreaterThan(1);
+  await rows.first().scrollIntoViewIfNeeded();
   await expect.poll(() => rows.first().locator('img').evaluate(image => image.naturalWidth), { timeout: 15000 }).toBeGreaterThan(0);
   await page.screenshot({ animations: 'disabled', path: testInfo.outputPath('music-search.png') });
+  await page.screenshot({ animations: 'disabled', path: `design/creative-verification/catalog-results-${testInfo.project.name}.png` });
   const title = await rows.first().locator('h3').innerText();
   const selectedArtwork = await rows.first().locator('img').getAttribute('src');
   const secondArtwork = await rows.nth(1).locator('img').getAttribute('src');
@@ -27,8 +30,8 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   await rows.first().getByRole('button', { name: `Play ${title}`, exact: true }).click();
   await expect.poll(() => page.evaluate(() => document.querySelector('audio').currentTime), { timeout: 25000 }).toBeGreaterThan(1);
   await rows.nth(1).getByRole('button', { name: /^Queue / }).click();
-  await page.getByRole('link', { name: 'Listen', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Back to Discover', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Player', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Back to Worlds', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Save to Space', exact: true }).click();
   await page.getByLabel('Choose your space').selectOption(spaceId);
   await page.getByRole('dialog').getByRole('button', { name: 'Save track', exact: true }).click();
@@ -54,16 +57,30 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   await page.screenshot({ path: `design/creative-verification/queue-${testInfo.project.name}.png` });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'View queue', exact: true })).toBeFocused();
+  const beforeScene = await page.locator('audio').getAttribute('src');
+  await page.getByRole('button', { name: 'Scene', exact: true }).click();
+  await expect(page.locator('.scene-backdrop img')).toBeVisible();
+  await expect(page.locator('.listening-room')).toHaveCSS('opacity', '1');
+  expect(await page.locator('audio').getAttribute('src')).toBe(beforeScene);
+  expect(await page.locator('audio').count()).toBe(1);
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: `design/creative-verification/scene-${testInfo.project.name}.png` });
+  await page.getByRole('button', { name: 'Artwork', exact: true }).click();
   await page.getByRole('button', { name: 'Focus mode', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Exit focus', exact: true })).toBeVisible();
   expect(await page.locator('audio').count()).toBe(1);
-  await expect(page.locator('.room-story')).toHaveCSS('opacity', '1');
+  await expect(page.locator('.player-stage')).toHaveCSS('opacity', '1');
   await page.screenshot({ path: `design/creative-verification/focus-${testInfo.project.name}.png` });
   await page.getByRole('button', { name: 'Exit focus', exact: true }).click();
+  await expect(page.locator('.listen-page')).not.toHaveClass(/is-focused/);
+  await page.evaluate(() => scrollTo(0, 0));
   if (testInfo.project.name === 'desktop') {
     for (const [width, height] of [[1440, 900], [1280, 800], [390, 844], [360, 740]]) {
       await page.setViewportSize({ width, height });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(page.getByRole('link', { name: 'Worlds', exact: true })).toBeVisible();
+      await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `design/creative-verification/listen-${width}x${height}.png` });
       await page.screenshot({ animations: 'disabled', path: testInfo.outputPath(`listen-${width}x${height}.png`), fullPage: true });
     }
@@ -73,13 +90,13 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   await expect.poll(() => page.evaluate(() => document.querySelector('audio').paused)).toBe(false);
   const source = await page.evaluate(() => document.querySelector('audio').currentSrc);
   const firstTrackId = new URL(source).searchParams.get('trackid');
-  await page.getByRole('link', { name: 'Compose', exact: true }).click();
+  await page.getByRole('link', { name: 'New world', exact: true }).click();
   expect(await page.locator('audio').count()).toBe(1);
   expect(await page.evaluate(() => document.querySelector('audio').currentSrc)).toBe(source);
   expect(await page.evaluate(() => document.querySelector('audio').currentTime)).toBeGreaterThan(9);
   await expect(page.locator('.compact-player')).toHaveCSS('opacity', '1');
   await page.screenshot({ path: `design/creative-verification/compact-player-${testInfo.project.name}.png` });
-  await page.getByRole('link', { name: 'Listen', exact: true }).click();
+  await page.getByRole('link', { name: 'Player', exact: true }).click();
   await page.getByRole('button', { name: 'Next', exact: true }).click();
   await expectLiveStream(page, secondTrackId);
   await expect.poll(() => page.evaluate(() => document.querySelector('audio').currentTime), { timeout: 20000 }).toBeGreaterThan(.2);
@@ -92,7 +109,7 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   const duration = await page.evaluate(() => document.querySelector('audio').duration);
   await page.getByLabel('Track position', { exact: true }).fill(String(Math.floor((duration - .6) * 10) / 10));
   await expectLiveStream(page, secondTrackId);
-  await page.goto(`/spaces/${spaceId}`);
+  await page.goto(`/spaces/${spaceId}#sound`);
   const saved = page.getByRole('list', { name: 'Saved music' });
   await expect(saved.getByRole('heading', { name: title })).toBeVisible();
   await page.reload();
@@ -107,7 +124,7 @@ test('real Jamendo search, audio controls, queue, route continuity and saved mus
   await expect(saved).not.toBeVisible();
   await page.reload();
   await expect(page.getByText(/No music saved here yet/)).toBeVisible();
-  await page.getByRole('link', { name: 'Listen', exact: true }).click();
+  await page.getByRole('link', { name: 'Player', exact: true }).click();
   // An explicit test-only upstream failure must be recoverable, not a crash.
   await page.route('**/api/music/tracks/*/*/playback', route => route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ error: { code: 'MUSIC_PROVIDER_UNAVAILABLE', message: 'Provider unavailable during this test.' } }) }), { times: 1 });
   await page.getByRole('button', { name: 'Next', exact: true }).click();

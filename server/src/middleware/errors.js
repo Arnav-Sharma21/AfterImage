@@ -17,6 +17,7 @@ export function errorHandler(error, req, res, next) {
   if (res.destroyed || req.aborted) return;
   if (res.headersSent) return next(error);
   let failure = error;
+  if (error.name === 'MulterError') failure = new AppError(error.code === 'LIMIT_FILE_SIZE' ? 413 : 422, 'UPLOAD_LIMIT', error.code === 'LIMIT_FILE_SIZE' ? 'Use an image smaller than 8 MB.' : 'Upload one image at a time, using the image field.');
   if (error.type === 'entity.parse.failed') failure = new AppError(400, 'INVALID_JSON', 'Send a valid JSON request.');
   if (error.type === 'entity.too.large') failure = new AppError(413, 'BODY_TOO_LARGE', 'The request is too large.');
   if (error.code === 11000) failure = new AppError(409, 'EMAIL_EXISTS', 'An account with this email already exists. Sign in instead.');

@@ -1,15 +1,16 @@
-# dependencies and builds
+# Dependencies
 node_modules/
 client/node_modules/
 server/node_modules/
+
+# Build outputs
 dist/
 client/dist/
 server/dist/
+build/
 coverage/
-test-results/
-playwright-report/
 
-# secrets
+# Environment variables & secrets
 .env
 .env.*
 !.env.example
@@ -17,20 +18,27 @@ playwright-report/
 *.pem
 *.key
 
-# personal IDE/system files
-.DS_Store
+# Logs
 *.log
+logs/
+
+# Test artifacts
+test-results/
+playwright-report/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# Editor & OS artifacts
+.DS_Store
+Thumbs.db
 .vscode/
+.idea/
+.impeccable/
 
-# design inspiration includes third-party screenshots; never publish or ship these
-/design/references/
-/design/approved-references/
-/design/current-ui/
-# Local browser QA captures may contain third-party album artwork.
-/design/verification/
-
-# Local creative QA captures can include licensed provider artwork.
-/design/creative-verification/
-
-# Local visual references
-design/references/
+# Design references, inspiration & verification (third-party visual material; local-only)
+/design/

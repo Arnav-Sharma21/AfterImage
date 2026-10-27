@@ -4,6 +4,7 @@ import { isPublicImageUrl } from '../../../shared/images.js';
 
 const fragmentSchema = z.object({ id: z.uuid(), type: z.enum(['quote', 'note', 'image-caption']), text: z.string().trim().min(1, 'Write a fragment or remove it.').max(1000) }).strict();
 const imageSchema = z.object({
+  assetId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
   id: z.uuid(),
   url: z.string().trim().max(2048).refine(isPublicImageUrl, 'Use a public HTTPS image URL without credentials or a custom port.'),
   alt: z.string().trim().min(1, 'Describe this image for accessibility.').max(200),

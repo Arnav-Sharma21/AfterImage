@@ -53,8 +53,8 @@ test('image collage persists edits/order/removal, keyboard guards and responsive
   await page.getByRole('button', { name: 'Move image 2 earlier', exact: true }).click();
   await page.getByRole('button', { name: 'Save space', exact: true }).click();
   await expect(page.getByText('All changes saved')).toBeVisible();
-  await expect(page).toHaveURL(/\/compose\/[a-f0-9]{24}$/);
-  const id = page.url().split('/').pop();
+  await expect(page).toHaveURL(/\/worlds\/[a-f0-9]{24}\/edit$/);
+  const id = page.url().match(/(?:compose|worlds)\/([a-f\d]{24})/)[1];
   await page.reload();
   // Existing image cards collapse after persistence; open the actual editor.
   await page.getByRole('tab', { name: 'Images', exact: true }).click();
@@ -65,7 +65,7 @@ test('image collage persists edits/order/removal, keyboard guards and responsive
   await expect(page.getByLabel('Energy', { exact: true })).toHaveValue('0.2');
   await page.getByRole('tab', { name: 'Images', exact: true }).click();
   await page.getByLabel('Image caption 1', { exact: true }).fill('A changed but unsaved caption');
-  await page.getByRole('link', { name: 'Discover', exact: true }).click();
+  await page.getByRole('link', { name: 'Worlds', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();

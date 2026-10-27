@@ -11,7 +11,7 @@ export function protectMutations(origin) {
   return (req, _res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     if (req.get('origin') !== origin) return next(new AppError(403, 'ORIGIN_REJECTED', 'This request came from an untrusted origin.'));
-    if (!req.is('application/json')) return next(new AppError(415, 'JSON_REQUIRED', 'Use application/json for this request.'));
+    if (!req.is('application/json') && !(req.method === 'POST' && req.path === '/media' && req.is('multipart/form-data'))) return next(new AppError(415, 'JSON_REQUIRED', 'Use application/json for this request.'));
     const provided = req.get('x-csrf-token');
     const expected = req.session.csrfToken;
     if (!provided || !expected || !/^[a-f\d]{64}$/.test(provided) || !timingSafeEqual(Buffer.from(provided), Buffer.from(expected))) {

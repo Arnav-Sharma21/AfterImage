@@ -5,8 +5,8 @@ export function spaceAtmosphere(space) {
   if (space?.soundTuning?.warmth > .7 || moods.includes('Warm')) return { '--space-glow': '#9f632f', '--space-ink': '#20150f' };
   if (space?.soundTuning?.melancholy > .7 || space?.soundTuning?.nostalgia > .7 || moods.includes('Melancholic')) return { '--space-glow': '#805277', '--space-ink': '#241825' };
   if (space?.soundTuning?.intensity > .7 || moods.includes('Intense') || (moods.includes('Restless') && !moods.includes('Quiet'))) return { '--space-glow': '#c34b3b', '--space-ink': '#30171b' };
-  if (moods.includes('Quiet') || moods.includes('Focused')) return { '--space-glow': '#356873', '--space-ink': '#101d22' };
-  if (moods.includes('Dreamlike')) return { '--space-glow': '#6c548b', '--space-ink': '#20172d' };
+  if (moods.includes('Quiet') || moods.includes('Focused')) return { '--space-glow': '#a94770', '--space-ink': '#1a0e17' };
+  if (moods.includes('Dreamlike')) return { '--space-glow': '#bd668f', '--space-ink': '#24111f' };
   return { '--space-glow': '#b82e53', '--space-ink': '#2b111a' };
 }
 

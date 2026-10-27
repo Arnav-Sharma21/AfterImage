@@ -9,6 +9,7 @@ export function AuthForm({ reauthenticate = false, onSuccess }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
   const formRef = useRef(null);
   const existingUser = useSessionStore(state => state.user);
   const authenticate = useSessionStore(state => state.authenticate);
@@ -35,9 +36,10 @@ export function AuthForm({ reauthenticate = false, onSuccess }) {
   }
 
   return <div className="auth-form">
+    {!reauthenticate ? <div className="auth-form-heading"><h2>{mode === 'register' ? <>Your world.<br />Starts here.</> : <>Back for<br />the feeling?</>}</h2><p>{mode === 'register' ? 'Collect images, write a memory, and find music that belongs.' : 'Your spaces, saved sounds and unfinished thoughts are waiting.'}</p></div> : null}
     {!reauthenticate ? <div className="auth-switch" aria-label="Account action">
-      <Button variant={mode === 'register' ? 'tab-active' : 'tab'} onClick={() => { setMode('register'); setError(''); setFieldErrors({}); }} disabled={busy}>Create account</Button>
-      <Button variant={mode === 'login' ? 'tab-active' : 'tab'} onClick={() => { setMode('login'); setError(''); setFieldErrors({}); }} disabled={busy}>Sign in</Button>
+      <Button variant={mode === 'register' ? 'tab-active' : 'tab'} aria-pressed={mode === 'register'} onClick={() => { setMode('register'); setError(''); setFieldErrors({}); }} disabled={busy}>Create account</Button>
+      <Button variant={mode === 'login' ? 'tab-active' : 'tab'} aria-pressed={mode === 'login'} onClick={() => { setMode('login'); setError(''); setFieldErrors({}); }} disabled={busy}>Sign in</Button>
     </div> : <p className="muted">Sign in again as {existingUser.email}. Your draft will stay here.</p>}
     <form ref={formRef} onSubmit={submit} aria-busy={busy}>
       {mode === 'register' ? <Field label="Your name" id="displayName" error={fieldErrors.displayName}>
@@ -47,7 +49,7 @@ export function AuthForm({ reauthenticate = false, onSuccess }) {
         <input id="email" name="email" type="email" autoComplete="email" maxLength={254} required disabled={busy} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'email-error' : undefined} />
       </Field> : null}
       <Field label="Password" id="password" error={fieldErrors.password} hint={mode === 'register' ? 'Use 15–128 characters. A memorable phrase works well.' : undefined}>
-        <input id="password" name="password" type="password" minLength={mode === 'register' ? 15 : 1} maxLength={128} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required disabled={busy} aria-invalid={Boolean(fieldErrors.password)} aria-describedby={[mode === 'register' ? 'password-hint' : '', fieldErrors.password ? 'password-error' : ''].filter(Boolean).join(' ') || undefined} />
+        <div className="password-control"><input id="password" name="password" type={showPassword ? 'text' : 'password'} minLength={mode === 'register' ? 15 : 1} maxLength={128} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required disabled={busy} aria-invalid={Boolean(fieldErrors.password)} aria-describedby={[mode === 'register' ? 'password-hint' : '', fieldErrors.password ? 'password-error' : ''].filter(Boolean).join(' ') || undefined} /><button type="button" disabled={busy} onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? 'Hide' : 'Show'}</button></div>
       </Field>
       <ErrorMessage message={error} />
       <Button type="submit" className="w-full" disabled={busy}>{busy ? 'Connecting…' : mode === 'register' ? 'Create your account' : 'Sign in'}</Button>

@@ -6,6 +6,7 @@ import { connectDatabase } from '../../src/config/database.js';
 import { User } from '../../src/models/User.js';
 import { Moodspace } from '../../src/models/Moodspace.js';
 import { Track } from '../../src/models/Track.js';
+import { MediaAsset } from '../../src/models/MediaAsset.js';
 import { UserFeedback } from '../../src/models/UserFeedback.js';
 
 export async function testDatabase() {
@@ -23,22 +24,22 @@ export async function testDatabase() {
   }
   try {
     await connectDatabase(uri, { dbName });
-    const models = [User, Moodspace, Track, UserFeedback];
+    const models = [User, Moodspace, Track, UserFeedback, MediaAsset];
     await Promise.all(models.map(model => model.createCollection()));
     await Promise.all(models.map(model => model.createIndexes()));
     const store = MongoStore.create({ client: mongoose.connection.getClient(), dbName: mongoose.connection.name, collectionName: 'sessions' });
     return {
       store,
       async close() {
-        await mongoose.connection.dropDatabase();
-        await store.close();
-        await mongoose.disconnect();
-        await mongod?.stop();
+        await mongoose.connection.dropDatabase().catch(() => {});
+        await store.close().catch(() => {});
+        await mongoose.disconnect().catch(() => {});
+        await mongod?.stop({ doCleanup: true, force: true });
       }
     };
   } catch (error) {
-    await mongoose.disconnect();
-    await mongod?.stop();
+    await mongoose.disconnect().catch(() => {});
+    await mongod?.stop({ doCleanup: true, force: true });
     throw error;
   }
 }

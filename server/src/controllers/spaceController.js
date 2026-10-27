@@ -14,10 +14,10 @@ export async function create(req, res) {
 }
 
 export async function update(req, res) {
-  res.json({ data: await spaceService.updateSpace(req.user._id, req.validated.params.id, req.validated.body) });
+  res.json({ data: await spaceService.updateSpace(req.user._id, req.validated.params.id, req.validated.body, req.app.locals.media) });
 }
 
 export async function remove(req, res) {
-  await spaceService.deleteSpace(req.user._id, req.validated.params.id, req.validated.body.revision);
+  await spaceService.deleteSpace(req.user._id, req.validated.params.id, req.validated.body.revision, req.app.locals.media);
   res.json({ data: { message: 'Space deleted.' } });
 }

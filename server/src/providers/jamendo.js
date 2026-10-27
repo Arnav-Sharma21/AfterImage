@@ -54,25 +54,25 @@ export function createJamendoProvider({ clientId, fetchImpl = fetch, timeoutMs =
     try {
       const timeout = AbortSignal.timeout(deadlineMs);
       const signal = externalSignal ? AbortSignal.any([timeout, externalSignal]) : timeout;
-      // Both attempts share one deadline. Empty live responses have occurred for
-      // known track IDs; recheck once before treating them as removed.
-      for (let attempt = 0; attempt < 2; attempt++) {
+      // Up to 3 attempts with progressive delay for transient empty cluster responses.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 350));
         const response = await fetchImpl(url, { signal, redirect: 'error' });
         if (response.status === 429) throw new AppError(429, 'MUSIC_RATE_LIMITED', 'Jamendo is receiving too many requests. Wait a moment and try again.');
         if (response.status === 401 || response.status === 403) throw new AppError(503, 'MUSIC_CREDENTIALS_INVALID', 'Jamendo rejected the server credentials. Check JAMENDO_CLIENT_ID.');
-        if (response.status >= 500 && attempt === 0) continue;
+        if (response.status >= 500 && attempt < 2) continue;
         if (!response.ok) throw new AppError(502, 'MUSIC_PROVIDER_UNAVAILABLE', 'Jamendo is unavailable. Please try again shortly.');
         const body = await response.json();
         if (Number(body.headers?.code) !== 0 || !['success', 'succeed'].includes(body.headers?.status)) {
           // Do not echo upstream error messages: they can contain request credentials.
           const code = Number(body.headers?.code);
-          if (code === 1 && attempt === 0) continue;
+          if (code === 1 && attempt < 2) continue;
           if (code === 6) throw new AppError(429, 'MUSIC_RATE_LIMITED', 'Jamendo is receiving too many requests. Wait a moment and try again.');
           if ([4, 5].includes(code)) throw new AppError(503, 'MUSIC_CREDENTIALS_INVALID', 'Jamendo rejected the server credentials. Check JAMENDO_CLIENT_ID.');
           throw new AppError(502, 'MUSIC_PROVIDER_ERROR', 'Jamendo could not complete this request. Please try again.');
         }
         if (!Array.isArray(body.results)) throw new Error('Malformed provider response');
-        if (!body.results.length && attempt === 0) continue;
+        if (!body.results.length && attempt < 2) continue;
         return body.results.map(raw => normalizeJamendoTrack(raw, clientId)).filter(Boolean);
       }
     } catch (error) {

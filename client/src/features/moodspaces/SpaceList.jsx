@@ -1,3 +1,4 @@
+import { EditorialPhoto } from '../../components/EditorialPhoto.jsx';
 import { spaceAtmosphere } from '../../components/spaceAtmosphere.js';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -28,20 +29,20 @@ export function SpaceList() {
   }
 
   return <section className="spaces-section" aria-labelledby="spaces-title">
-    <div className="section-heading"><div><p className="eyebrow">AN ATLAS OF YOUR INNER WORLD</p><h2 id="spaces-title">Your spaces</h2></div><Link className="text-link" to="/compose/new">Create a space <Arrow /></Link></div>
-    {state.loading ? <Loading>Retrieving your spaces…</Loading> : state.error ? <ErrorMessage message={state.error} onRetry={() => { setState(current => ({ ...current, loading: true })); setAttempt(value => value + 1); }} /> : state.spaces.length === 0 ? <div className="empty-space">
+    <div className="section-heading"><div><p className="eyebrow">YOUR PERSONAL COLLECTION</p><h2 id="spaces-title">Personal archive</h2></div><Link className="text-link" to="/worlds/new">New world <Arrow /></Link></div>
+    {state.loading ? <Loading>Retrieving your spaces…</Loading> : state.error ? <ErrorMessage message={state.error} onRetry={() => { setState(current => ({ ...current, loading: true })); setAttempt(value => value + 1); }} /> : state.spaces.length === 0 ? <div className="empty-archive"><div className="archive-first-photo"><EditorialPhoto priority /></div><div className="empty-space">
       <h3>A place for what stays with you.</h3>
       <p>A late night, a half-remembered summer, a clear head. Give it a title and a few moods.</p>
-      <Link className="button button--primary" to="/compose/new">Compose your first space <Arrow /></Link>
-    </div> : <>
+      <Link className="button button--primary" to="/worlds/new">Create your first world <Arrow /></Link>
+    </div></div> : <>
       <ol className="space-list">
         {state.spaces.map((space, index) => <li key={space.id} style={spaceAtmosphere(space)}>
-          <div className="space-row"><Link to={`/spaces/${space.id}`} className="space-row-main">
-            <div className="space-cover">{space.images?.[0] ? <Artwork src={space.images[0].url} /> : <TracePrint seed={space.title} />}{space.images?.[1] ? <Artwork className="space-cover-inset" src={space.images[1].url} /> : null}<span className="space-cover-type" aria-hidden="true">PRIVATE<br />ATMOSPHERE</span></div>
-            <span className="space-index" aria-hidden="true">{String((page - 1) * 20 + index + 1).padStart(2, '0')}</span>
+          <div className="space-row"><Link to={`/worlds/${space.id}`} className="space-row-main">
+            <div className="space-cover">{space.images?.[0] ? <Artwork src={space.images[0].url} /> : <TracePrint seed={space.title} />}{space.images?.[1] ? <Artwork className="space-cover-inset" src={space.images[1].url} /> : null}<span className="space-cover-type" aria-hidden="true">PERSONAL<br />WORLD</span></div>
+            {space.fragments?.find(item => item.type === 'quote') ? <blockquote className="archive-quote">{space.fragments.find(item => item.type === 'quote').text}</blockquote> : null}<span className="space-index" aria-hidden="true">{String((page - 1) * 20 + index + 1).padStart(2, '0')}</span>
             <div className="space-row-content"><h3>{space.title}</h3><p>{space.description || 'A feeling taking shape.'}</p><div className="tag-list">{space.moods.map(mood => <span key={mood}>{mood}</span>)}</div></div>
             <Arrow diagonal />
-          </Link><Link className="text-link" to={`/spaces/${space.id}#sound`} aria-label={`Find my sound for ${space.title}`}>Find my sound</Link></div>
+          </Link><Link className="text-link" to={`/worlds/${space.id}#sound`} aria-label={`Find my sound for ${space.title}`}>Open soundtrack ↗</Link></div>
         </li>)}
       </ol>
       {page > 1 || state.hasMore ? <div className="pagination"><Button variant="secondary" disabled={page === 1} onClick={() => changePage(page - 1)}>Previous page</Button><span>Page {page}</span><Button variant="secondary" disabled={!state.hasMore} onClick={() => changePage(page + 1)}>Next page</Button></div> : null}

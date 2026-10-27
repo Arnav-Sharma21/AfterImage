@@ -8,7 +8,7 @@ export function TrackRow({ track, onSave, onRemove, removing = false, removeDisa
   const [imageFailed, setImageFailed] = useState(false);
   const queued = usePlayerStore(state => state.queue.some(item => item.id === track.id));
   return <li className={`track-row ${featured ? 'track-row--featured' : ''}`}>
-    {track.artworkUrl && !imageFailed ? <img className="track-art" src={track.artworkUrl} alt="" width="80" height="80" loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="track-art track-art--empty" aria-hidden="true">a/</div>}
+    {track.artworkUrl && !imageFailed ? <img className="track-art" src={track.artworkUrl} alt="" width="80" height="80" loading={featured ? 'eager' : 'lazy'} referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /> : <div className="track-art track-art--empty" aria-hidden="true">a/</div>}
     <div className="track-info"><h3>{track.title}</h3><p>{track.artistName}{track.albumName ? ` · ${track.albumName}` : ''}</p><div className="track-attribution"><span>{formatTime(track.durationSeconds)}</span><a href={track.sourceUrl} target="_blank" rel="noreferrer">Jamendo</a>{track.licenseUrl ? <a href={track.licenseUrl} target="_blank" rel="noreferrer">License</a> : <span>License unavailable</span>}</div>{!track.isPlayable ? <p className="fine-print">Stream unavailable</p> : null}</div>
     <div className="track-actions">
       <Button variant="secondary" className="track-play" disabled={!track.isPlayable} onClick={() => usePlayerStore.getState().playTrack({ ...track, sourceSpaceId })} aria-label={`Play ${track.title}`}><Icon name="play" />Play</Button>

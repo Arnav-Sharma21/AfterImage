@@ -9,7 +9,7 @@ class GraphicsBoundary extends Component {
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export function EchoArtifact() {
+export function EchoArtifact({ accent }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   const [reduced, setReduced] = useState(false);
@@ -28,7 +28,7 @@ export function EchoArtifact() {
   }, []);
   const fallback = <div className="graphics-fallback"><TracePrint seed="echo" /></div>;
   return <figure ref={ref} className="echo-artifact" data-phase={phase}>
-    <div className="echo-viewport" role="img" aria-label="Echo ribbon: an original interactive chrome sculpture"><GraphicsBoundary fallback={fallback}><Suspense fallback={fallback}>{visible && !unavailable ? <EchoScene phase={phase} reduced={reduced} onUnavailable={() => setUnavailable(true)} /> : fallback}</Suspense></GraphicsBoundary></div>
-    <figcaption><span className="eyebrow">ECHO / A STUDY IN RESONANCE</span><button type="button" onClick={() => setPhase(value => (value + 1) % 3)} aria-label="Change sculpture atmosphere">{['Crimson', 'Nocturne', 'Amber'][phase]} <span aria-hidden="true">↗</span></button><span className="sculpture-note">Move your pointer. Change the light.<br />A visual sculpture, not audio analysis.</span></figcaption>
+    <div className="echo-viewport" role="img" aria-label="Echo ribbon: an original interactive chrome sculpture"><GraphicsBoundary fallback={fallback}><Suspense fallback={fallback}>{visible && !unavailable ? <EchoScene accent={accent} phase={phase} reduced={reduced} onUnavailable={() => setUnavailable(true)} /> : fallback}</Suspense></GraphicsBoundary></div>
+    <figcaption><span className="eyebrow">ECHO / A STUDY IN RESONANCE</span><button type="button" onClick={() => setPhase(value => (value + 1) % 3)} aria-label="Change sculpture atmosphere">{['Artwork / neon light', 'Deep pink', 'Rose chrome'][phase]} <span aria-hidden="true">↗</span></button><span className="sculpture-note">Move your pointer. Change the light.<br />A visual sculpture, not audio analysis.</span></figcaption>
   </figure>;
 }

@@ -16,6 +16,7 @@ const moodspaceSchema = new mongoose.Schema({
   images: { type: [new mongoose.Schema({
     id: { type: String, required: true },
     url: { type: String, required: true, maxlength: 2048, validate: isPublicImageUrl },
+    assetId: { type: String, match: /^[a-f\d]{24}$/i },
     alt: { type: String, required: true, maxlength: 200 },
     caption: { type: String, default: '', maxlength: 500 }
   }, { _id: false })], default: [], validate: items => items.length <= 12 && new Set(items.map(item => item.id)).size === items.length },

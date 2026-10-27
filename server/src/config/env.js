@@ -7,6 +7,9 @@ const schema = z.object({
   MONGODB_URI: z.string().regex(/^mongodb(?:\+srv)?:\/\//),
   SESSION_SECRET: z.string().min(32).refine(value => !value.startsWith('replace-'), 'Generate your own random session secret.'),
   JAMENDO_CLIENT_ID: z.string().trim().max(200).optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().trim().max(100).optional(),
+  CLOUDINARY_API_KEY: z.string().trim().max(200).optional(),
+  CLOUDINARY_API_SECRET: z.string().trim().max(300).optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(1).default(0)
 });
 
@@ -28,6 +31,7 @@ export function readConfig(environment = process.env) {
     mongoUri: env.MONGODB_URI,
     sessionSecret: env.SESSION_SECRET,
     trustProxyHops: env.TRUST_PROXY_HOPS,
+    cloudinary: { cloudName: env.CLOUDINARY_CLOUD_NAME, apiKey: env.CLOUDINARY_API_KEY, apiSecret: env.CLOUDINARY_API_SECRET },
     jamendoClientId: env.JAMENDO_CLIENT_ID || undefined
   };
 }

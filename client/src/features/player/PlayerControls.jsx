@@ -1,3 +1,4 @@
+import { useAtmosphere } from '../../atmosphere/useAtmosphere.js';
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -11,6 +12,7 @@ import { formatTime } from '../music/formatTime.js';
 
 export function PlayerSummary() {
   const track = usePlayerStore(state => state.queue.find(item => item.id === state.currentId));
+  const atmosphere = useAtmosphere(track?.artworkUrl);
   const playing = usePlayerStore(state => state.desiredPlaying);
   const status = usePlayerStore(state => state.status);
   const { openQueue } = usePlayerUI();
@@ -22,12 +24,12 @@ export function PlayerSummary() {
       if (root.current) gsap.from(root.current, { y: 24, opacity: 0, duration: .45, ease: 'power3.out', clearProps: 'transform,opacity' });
     });
     return () => media.revert();
-  }, { scope: root, dependencies: [Boolean(track), location.pathname === '/listen'], revertOnUpdate: true });
-  if (!track || location.pathname === '/listen') return null;
-  return <aside ref={root} className="compact-player" aria-label="Music player">
-    <Link className="compact-track" to="/listen" state={{ from: location.pathname + location.search }} aria-label={`Open Listen: ${track.title}`}><Artwork src={track.artworkUrl} /><span><strong>{track.title}</strong><small>{['loading', 'buffering'].includes(status) ? 'Loading audio…' : track.artistName}</small></span></Link>
+  }, { scope: root, dependencies: [Boolean(track), ['/listen', '/player'].includes(location.pathname)], revertOnUpdate: true });
+  if (!track || ['/listen', '/player'].includes(location.pathname)) return null;
+  return <aside ref={root} className="compact-player" style={atmosphere.style} data-palette-method={atmosphere.method} aria-label="Music player">
+    <Link className="compact-track" to="/player" state={{ from: location.pathname + location.search }} aria-label={`Open Listen: ${track.title}`}><Artwork src={track.artworkUrl} /><span><strong>{track.title}</strong><small>{['loading', 'buffering'].includes(status) ? 'Loading audio…' : track.artistName}</small></span></Link>
     <div className="compact-transport"><Button variant="text" onClick={() => usePlayerStore.getState().previous()} aria-label="Previous track"><Icon name="previous" /></Button><Button className="compact-toggle" variant="secondary" onClick={() => usePlayerStore.getState().toggle()} aria-label={playing ? 'Pause music' : 'Resume music'}><Icon name={playing ? 'pause' : 'play'} /></Button><Button variant="text" onClick={() => usePlayerStore.getState().next()} aria-label="Next track"><Icon name="next" /></Button></div>
-    <Button variant="text" onClick={openQueue} aria-label="Open queue"><Icon name="queue" /></Button><Link className="compact-expand" to="/listen" state={{ from: location.pathname + location.search }} aria-label="Expand player"><Icon name="expand" /></Link>
+    <Button variant="text" onClick={openQueue} aria-label="Open queue"><Icon name="queue" /></Button><Link className="compact-expand" to="/player" state={{ from: location.pathname + location.search }} aria-label="Expand player"><Icon name="expand" /></Link>
     <CompactProgress />
   </aside>;
 }
@@ -41,8 +43,8 @@ export function PlayerNotice() {
   const error = usePlayerStore(state => state.error);
   const status = usePlayerStore(state => state.status);
   const location = useLocation();
-  if (location.pathname === '/listen' || (!error && !['loading', 'buffering'].includes(status))) return null;
-  return <div className="player-notice">{error ? <><p className="field-error" role="alert">{error}</p><Link className="text-link" to="/listen">Open playback controls</Link></> : <p role="status">{status === 'loading' ? 'Loading track…' : 'Buffering audio…'}</p>}</div>;
+  if (['/listen', '/player'].includes(location.pathname) || (!error && !['loading', 'buffering'].includes(status))) return null;
+  return <div className="player-notice">{error ? <><p className="field-error" role="alert">{error}</p><Link className="text-link" to="/player">Open playback controls</Link></> : <p role="status">{status === 'loading' ? 'Loading track…' : 'Buffering audio…'}</p>}</div>;
 }
 
 export function PlayerControls() {
