@@ -31,3 +31,6 @@ playwright-report/
 
 # Local creative QA captures can include licensed provider artwork.
 /design/creative-verification/
+
+# Local visual references
+design/references/
