@@ -3,11 +3,10 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "client/dist",
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://REPLACE_WITH_RENDER_BACKEND_URL.onrender.com/api/$1"
+      "destination": "https://afterimage-api-avnu.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
