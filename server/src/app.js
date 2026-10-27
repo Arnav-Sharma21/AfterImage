@@ -35,7 +35,9 @@ export function createApp(config, sessionStore, { musicProvider } = {}) {
     contentSecurityPolicy: { directives: {
       'upgrade-insecure-requests': isProduction ? [] : null,
       'media-src': ["'self'", ...JAMENDO_MEDIA_ORIGINS],
-      'img-src': ["'self'", 'data:', ...JAMENDO_IMAGE_ORIGINS]
+      // User-provided HTTPS images load directly. No server-side URL fetching.
+      'img-src': ["'self'", 'data:', 'https:', ...JAMENDO_IMAGE_ORIGINS],
+      'object-src': ["'none'"]
     } },
     strictTransportSecurity: isProduction ? undefined : false
   }));

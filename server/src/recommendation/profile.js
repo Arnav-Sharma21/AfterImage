@@ -45,7 +45,8 @@ export function buildMoodProfile(space, savedTracks = [], likedTracks = []) {
   }
   const documents = [
     { text: space.title, label: 'title' }, { text: space.description, label: 'description' },
-    ...(space.fragments || []).map(fragment => ({ text: fragment.text, label: fragment.type === 'image-caption' ? 'image caption' : fragment.type }))
+    ...(space.fragments || []).map(fragment => ({ text: fragment.text, label: fragment.type === 'image-caption' ? 'image caption' : fragment.type })),
+    ...(space.images || []).map(image => ({ text: image.caption, label: 'image caption' }))
   ];
   // A term repeated across fragments contributes only once to the text group.
   const seenWords = new Set();

@@ -574,3 +574,11 @@ A separate QA record confirms one recording played fully; a short demo clip alon
 ### Decisions for plan review
 
 The proposed defaults are: private accounts; exactly five workflows; user-labeled image meaning; transparent rule-based recommendations; conditional Jamendo integration with a real licensed-catalog fallback; explicit saves and bounded selections; one Render origin plus Atlas; persistent favorites and a session-only queue. Provider access, exact recording rights, hosting cost approval, and deployment authorization remain external gates. Actual initial-slice verification is recorded in `docs/MILESTONE_1.md`; future catalog, playback, and production capabilities remain unverified until implemented and tested.
+
+## Approved final UI implementation — October 27, 2026
+
+The user's final transformation request and `FINAL_ART_DIRECTION.md` supersede earlier aesthetic wireframes and all four rejected generated concepts. The implemented visual pass uses the eleven approved local references as inspiration, with original CSS treatments, actual provider artwork and user-selected images. Functional architecture and Milestone 3.1 remain authoritative.
+
+The user explicitly authorized the small image-reference extension: `Moodspace.images` holds up to 12 ordered `{ id, url, alt, caption }` entries, validated public HTTPS URLs, bounded text and unique IDs. Existing owner/revision-scoped CRUD persists them; captions join the existing bounded text-signal group. No upload storage, image proxy, pixel inference, new provider or additional secret is introduced. External-image HTTPS requests are allowed by image CSP only; media policy remains restricted to existing authorized streams.
+
+The app now presents an editorial search/space atlas, a modular visual moodspace, an immersive Listen/focus view, a persistent compact player and a modal queue. Audio host/controller and Zustand transport state are retained. Motion uses short CSS opacity/transform transitions with reduced-motion alternatives; no animation or WebGL dependency was needed. Detailed component map, actual verification and limitations are recorded in [FINAL_UI_IMPLEMENTATION.md](FINAL_UI_IMPLEMENTATION.md). Deployment remains a separate authorized action; no commit, push or deployment is part of this pass.

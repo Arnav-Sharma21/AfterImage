@@ -24,3 +24,10 @@ playwright-report/
 
 # design inspiration includes third-party screenshots; never publish or ship these
 /design/references/
+/design/approved-references/
+/design/current-ui/
+# Local browser QA captures may contain third-party album artwork.
+/design/verification/
+
+# Local creative QA captures can include licensed provider artwork.
+/design/creative-verification/

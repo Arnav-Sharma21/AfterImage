@@ -11,7 +11,11 @@ export function notFound(_req, _res, next) {
   next(new AppError(404, 'NOT_FOUND', 'This resource could not be found.'));
 }
 
-export function errorHandler(error, req, res, _next) {
+export function errorHandler(error, req, res, next) {
+  // Navigation can cancel an asset/API response. Never write a second response
+  // or log a normal disconnected request as an application failure.
+  if (res.destroyed || req.aborted) return;
+  if (res.headersSent) return next(error);
   let failure = error;
   if (error.type === 'entity.parse.failed') failure = new AppError(400, 'INVALID_JSON', 'Send a valid JSON request.');
   if (error.type === 'entity.too.large') failure = new AppError(413, 'BODY_TOO_LARGE', 'The request is too large.');

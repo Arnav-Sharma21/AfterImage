@@ -28,6 +28,9 @@ describe('deterministic interpretation and ranking', () => {
     expect(withWords.features.warmth).toBeGreaterThan(baseline.features.warmth);
     expect(withWords.tagSources.acoustic).toContain('image caption word “warm”');
     expect(buildMoodProfile({ ...base, imageUrl: 'https://example.test/angry-red.jpg' })).toEqual(baseline);
+    expect(buildMoodProfile({ ...base, images: [{ url: 'https://images.example.com/red.jpg', alt: 'Angry red', caption: '' }] })).toEqual(baseline);
+    const captioned = buildMoodProfile({ ...base, images: [{ caption: 'warm sunshine' }] });
+    expect(captioned.tagSources.acoustic).toContain('image caption word “warm”');
     expect(buildMoodProfile({ ...base, description: 'unrecognized words xyz' })).toEqual(baseline);
   });
   it('bounds text influence, deduplicates repetitions and handles simple negation', () => {

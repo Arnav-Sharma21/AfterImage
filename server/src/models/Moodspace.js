@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { MOODS } from '../../../shared/moods.js';
+import { isPublicImageUrl } from '../../../shared/images.js';
 
 const moodspaceSchema = new mongoose.Schema({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -12,6 +13,12 @@ const moodspaceSchema = new mongoose.Schema({
   },
   soundTuning: { type: new mongoose.Schema(Object.fromEntries(['energy', 'melancholy', 'warmth', 'intensity', 'nostalgia'].map(key => [key, { type: Number, min: 0, max: 1 }])), { _id: false }), default: () => ({}) },
   revision: { type: Number, default: 0, min: 0, required: true },
+  images: { type: [new mongoose.Schema({
+    id: { type: String, required: true },
+    url: { type: String, required: true, maxlength: 2048, validate: isPublicImageUrl },
+    alt: { type: String, required: true, maxlength: 200 },
+    caption: { type: String, default: '', maxlength: 500 }
+  }, { _id: false })], default: [], validate: items => items.length <= 12 && new Set(items.map(item => item.id)).size === items.length },
   fragments: { type: [new mongoose.Schema({
     id: { type: String, required: true },
     type: { type: String, enum: ['quote', 'note', 'image-caption'], required: true },

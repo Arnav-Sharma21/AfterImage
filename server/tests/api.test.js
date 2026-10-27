@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { User } from '../src/models/User.js';
 import { Moodspace } from '../src/models/Moodspace.js';
+import { randomUUID } from 'node:crypto';
 import { testDatabase } from './helpers/database.js';
 
 const origin = 'http://127.0.0.1:5173';
@@ -32,6 +33,33 @@ async function account(email) {
 }
 
 describe('real MongoDB account and moodspace flow', () => {
+  it('persists, edits, reorders and removes validated owned image references', async () => {
+    const owner = await account('image-owner@example.com');
+    const other = await account('image-other@example.com');
+    const images = [
+      { id: randomUUID(), url: 'https://images.example.com/rain.jpg', alt: 'Rain on a window', caption: 'Quiet midnight rain' },
+      { id: randomUUID(), url: 'https://images.example.com/sun.jpg', alt: 'Late sunlight', caption: 'Warm memories' }
+    ];
+    const created = await mutate(owner, 'post', '/api/spaces', { title: 'Image world', moods: ['Quiet'], images }).expect(201);
+    const id = created.body.data.id;
+    expect(created.body.data.images).toEqual(images);
+    expect((await owner.agent.get(`/api/spaces/${id}`).expect(200)).body.data.images).toEqual(images);
+    await mutate(other, 'patch', `/api/spaces/${id}`, { revision: 0, images: [] }).expect(404);
+    const reordered = [{ ...images[1], caption: 'Warm sunset' }, images[0]];
+    await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 0, images: reordered }).expect(200);
+    expect((await Moodspace.findById(id).lean()).images.map(image => image.id)).toEqual(reordered.map(image => image.id));
+    await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 0, images: [] }).expect(409);
+    await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 1, title: 'Preserved images' }).expect(200);
+    expect((await owner.agent.get(`/api/spaces/${id}`)).body.data.images).toEqual(reordered);
+    for (const url of ['http://example.com/a.jpg', 'javascript:alert(1)', 'data:image/svg+xml,test', 'https://localhost/a', 'https://127.0.0.1/a', 'https://10.0.0.1/a', 'https://[::1]/a', 'https://user:password@example.com/a', 'https://example.com:8443/a']) {
+      await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 2, images: [{ ...images[0], url }] }).expect(422);
+    }
+    await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 2, images: [images[0], images[0]] }).expect(422);
+    await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 2, images: [{ ...images[0], alt: '' }] }).expect(422);
+    await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 2, images: Array.from({ length: 13 }, () => ({ ...images[0], id: randomUUID() })) }).expect(422);
+    const removed = await mutate(owner, 'patch', `/api/spaces/${id}`, { revision: 2, images: [] }).expect(200);
+    expect(removed.body.data.images).toEqual([]);
+  });
   it('provides liveness/readiness and requires authentication', async () => {
     await request(app).get('/api/health').expect(200);
     await request(app).get('/api/ready').expect(200);

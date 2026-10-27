@@ -10,6 +10,8 @@ Milestone 2 adds real Jamendo search, artwork/metadata, direct audio playback, a
 
 Milestone 3 adds **Find my sound**: deterministic mood profiles, real-catalog candidate ranking, truthful explanations, and persistent likes/dislikes. Mood tags, recognized words, optional quote/note/manual-caption fragments, saved music, and recent likes influence the selection. No raw image analysis or AI service is used. Image uploads and advanced visual effects remain future work.
 
+The final UI implementation adds an editorial Discover, an artwork-led Listen with focus mode and a queue drawer, a persistent compact player, and real image moodboards. Compose supports up to 12 ordered public HTTPS image references with descriptions and captions, alongside quotes, notes and saved Mood DNA targets. Captions participate in the existing text rules; images are never analyzed. There is no file-upload storage or new credential. See [implementation and visual QA](docs/FINAL_UI_IMPLEMENTATION.md) and [Milestone 3.1](docs/MILESTONE_3_1.md) for preserved recommendation/session behavior.
+
 ## Local setup
 
 Use Node.js 24 LTS (`.nvmrc`) and npm. The current dependency set requires Node 22.12 or newer. This workspace was verified on Node 26.11.1; Node 24 itself has not been tested here.
@@ -106,6 +108,16 @@ See [Milestone 1](docs/MILESTONE_1.md), [Milestone 2 verification](docs/MILESTON
 The pure extraction/ranking code is separate from controllers and provider code. The documented formula combines mood overlap (.45), feature similarity (.20), genre compatibility (.20), and preference (.15), with missing-evidence coverage and saved/recent repetition penalties. See `docs/MILESTONE_3.md` for the full definitions and limits. Only derived catalog tags go to Jamendo; private text is not sent upstream.
 
 The live preflight `node server/scripts/verify-recommendations.js` compares actual Jamendo results for three explicit verification profiles. The opt-in browser suite includes recommendation persistence, playback/saving, feedback, dislike exclusion, and Discover integration. Synthetic unit/HTTP fixtures remain test-only.
+
+## Compose a visual moodspace
+
+1. Open Compose. Enter a title/description and choose 1–5 moods.
+2. Choose **Add image** and paste a direct public HTTPS image URL you have permission to display. Enter its accessible description and optional caption. Up to 12 images are supported; local/private addresses, credentials, custom ports and non-HTTPS URLs are rejected.
+3. Use the image arrows to reorder; open **Edit image** to revise its URL, description or caption. Remove an image with its labeled action. Changes persist only after **Save space** or **Save changes** succeeds.
+4. Add a quote, note or text caption. Open **Mood DNA** to enable manual targets, then save before **Find my sound / Refresh my sound**. Mobile tuning is collapsed initially to keep the image composition accessible.
+5. Return to the space to see its saved collage and music. Play a track and expand Listen; the compact player retains pause/resume, skip and queue access elsewhere. **Focus mode** hides secondary navigation; **Exit focus** restores it.
+
+External image hosts receive browser requests without a referrer. The app stores URL references and captions, not image files. Hosts can remove images or block embedding; the canvas keeps its text and a visual fallback. Protected/private URLs and local uploads are unsupported. No reference-board imagery is bundled in the frontend.
 
 ## Try the music workflow locally
 
