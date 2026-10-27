@@ -2,7 +2,7 @@
 
 This specification implements the user's latest explicit approval. It supersedes the layout, naming, fixed-palette and implementation guidance in `design/NEW_DESIGN_PROPOSAL.md` and historical visual plans. The fifteen directly inspected images in `design/references/` are the visual authority. Product/security contracts in milestone documentation remain valid.
 
-The latest user-approved brand is neon pink and near-black throughout the product. See `NEON_PINK_UPDATE.md` for the subsequent shared-library and account-entry implementation. This replaces the older neutral/serif direction.
+The latest user-approved brand is neon pink and near-black throughout the product.This replaces the older neutral/serif direction.
 
 ## Experience architecture
 
