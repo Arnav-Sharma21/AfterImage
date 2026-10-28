@@ -8,7 +8,7 @@
 
 Build a personal world from photographs, thoughts, and a five-dimensional mood profile. Find independent music that belongs in it. Stay for the atmosphere.
 
-**[ENTER AFTERIMAGE ↗](https://afterimage-brown.vercel.app)** · **[EXPLORE THE CODE](https://github.com/Arnav-Sharma21/AfterImage)**
+**[ENTER AFTERIMAGE ↗](https://afterimage-brown.vercel.app)** · **[SEE ITS WORKING-->](https://drive.google.com/file/d/1GBuHLFQaX0gg_Cv3kkmfzNs2FvmTr4IU/view?usp=sharing)**
 
 </div>
 
